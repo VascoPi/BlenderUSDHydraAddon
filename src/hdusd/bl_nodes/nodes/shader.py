@@ -291,8 +291,8 @@ class ShaderNodeBsdfPrincipled(NodeParser):
         # Emission -> Emission
         if enabled(emission):
             emission_strength = self.get_input_value("Emission Strength")
-            emission_weight = emission_strength.data * 0.5 if isinstance(emission_strength.data, float) else emission_strength
-            emission_color = emission if isinstance(emission, NodeItem) else emission.data[:3]
+            emission_weight = min(1.0, max((emission_strength.data * 0.5, 0.5))) if isinstance(emission_strength.data, float) else emission_strength.min(1.0) * 0.5 + 0.5
+            emission_color = (emission if isinstance(emission, NodeItem) else emission.data[:3]) * emission_strength
 
             result.set_inputs({
                 'uber_emission_weight': emission_weight,
