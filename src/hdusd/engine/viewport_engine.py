@@ -25,6 +25,7 @@ from pxr import UsdImagingGL
 
 from .engine import Engine
 from ..export import camera, material, object, world
+from ..usd_nodes import node_tree
 from .. import utils
 from ..utils import usd as usd_utils
 from ..utils import time_str
@@ -257,6 +258,7 @@ class ViewportEngine(Engine):
 
     def _sync(self, context, depsgraph):
         self._sync_render_settings(depsgraph.scene)
+        node_tree.reset()
 
     def _sync_update(self, context, depsgraph):
         scene = next((update.id for update in depsgraph.updates
@@ -265,6 +267,7 @@ class ViewportEngine(Engine):
             return
 
         self._sync_render_settings(scene)
+        node_tree.reset()
 
     def draw(self, context):
         log("Draw")
@@ -456,8 +459,9 @@ class ViewportEngineNodetree(ViewportEngine):
         UsdGeom.SetStageMetersPerUnit(stage, 1)
         UsdGeom.SetStageUpAxis(stage, UsdGeom.Tokens.z)
 
-        nodetree = bpy.data.node_groups[self.data_source]
-        output_node = nodetree.get_output_node()
+
+        nd_tree = bpy.data.node_groups[self.data_source]
+        output_node = nd_tree.get_output_node()
         self.nodetree_stage_changed(output_node.cached_stage() if output_node else None)
 
     def nodetree_stage_changed(self, stage):

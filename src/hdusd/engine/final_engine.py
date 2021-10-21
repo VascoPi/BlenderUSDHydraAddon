@@ -22,6 +22,7 @@ import bpy
 import bgl
 
 from .engine import Engine
+from ..usd_nodes import node_tree
 from ..utils import gl, time_str
 from ..utils import usd as usd_utils
 from ..export import object, world
@@ -293,6 +294,8 @@ class FinalEngineNodetree(FinalEngine):
         if output_node is None:
             log.warn("Syncing stopped due to invalid output_node", output_node)
             return
+
+        node_tree.reset()
 
         stage = output_node.cached_stage()
         self.cached_stage.assign(stage)
