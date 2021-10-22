@@ -258,7 +258,6 @@ class ViewportEngine(Engine):
 
     def _sync(self, context, depsgraph):
         self._sync_render_settings(depsgraph.scene)
-        node_tree.reset()
 
     def _sync_update(self, context, depsgraph):
         scene = next((update.id for update in depsgraph.updates
@@ -267,7 +266,6 @@ class ViewportEngine(Engine):
             return
 
         self._sync_render_settings(scene)
-        node_tree.reset()
 
     def draw(self, context):
         log("Draw")
@@ -453,6 +451,7 @@ class ViewportEngineNodetree(ViewportEngine):
     def _sync(self, context, depsgraph):
         super()._sync(context, depsgraph)
 
+        node_tree.reset()
         self.data_source = depsgraph.scene.hdusd.viewport.data_source
 
         stage = self.cached_stage.create()
@@ -485,3 +484,7 @@ class ViewportEngineNodetree(ViewportEngine):
                                                            prim.GetPath())
 
         self.render_engine.tag_redraw()
+
+    def _sync_update(self, context, depsgraph):
+        super()._sync_update(context, depsgraph)
+        node_tree.depsgraph_update(depsgraph)
