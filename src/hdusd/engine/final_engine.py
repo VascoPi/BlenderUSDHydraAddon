@@ -295,7 +295,7 @@ class FinalEngineNodetree(FinalEngine):
             log.warn("Syncing stopped due to invalid output_node", output_node)
             return
 
-        node_tree.depsgraph_update(depsgraph)
+        node_tree.reset()
 
         stage = output_node.cached_stage()
         self.cached_stage.assign(stage)
