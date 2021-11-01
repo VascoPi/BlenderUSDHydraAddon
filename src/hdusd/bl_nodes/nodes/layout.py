@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #********************************************************************
-from ...utils import logging
-log = logging.Log("bl_nodes.nodes")
 
-from .input import *
-from .output import *
-from .shader import *
-from .texture import *
-from .color import *
-from .converter import *
-from .vector import *
-from .layout import *
+
+from ..node_parser import NodeParser
+
+
+class NodeReroute(NodeParser):
+    """ REORUTE """
+
+    def export(self):
+        return self.get_input_link(0)
