@@ -323,8 +323,8 @@ class BlenderDataNode(USDNode):
                 continue
 
         if is_updated:
-            self.hdusd.usd_list.update_items()
-            self._reset_next(True)
+            #self.hdusd.usd_list.update_items()
+            self.reset()
 
     def material_update(self, mat):
         stage = self.cached_stage()
