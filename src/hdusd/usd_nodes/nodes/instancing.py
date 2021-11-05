@@ -149,4 +149,4 @@ class InstancingNode(USDNode):
         obj = next((update.id for update in depsgraph.updates if isinstance(update.id, bpy.types.Object)
                     and not update.id.hdusd.is_usd and update.id.name == self.object.name), None)
         if obj:
-            self.reset()
+            self.reset(True)

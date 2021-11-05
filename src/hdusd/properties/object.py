@@ -54,7 +54,8 @@ class ObjectProperties(HdUSDProperties):
 
     def sync_transform_from_prim(self, prim):
         prim_obj = self.id_data
-        prim_obj.matrix_local = usd_utils.get_xform_transform(UsdGeom.Xform(prim))
+        if prim.GetTypeName() in GEOM_TYPES:
+            prim_obj.matrix_local = usd_utils.get_xform_transform(UsdGeom.Xform(prim))
 
     def sync_to_prim(self):
         prim = self.get_prim()

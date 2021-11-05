@@ -250,7 +250,7 @@ class BlenderDataNode(USDNode):
 
                 elif self.data == 'OBJECT':
                     if not self.object or \
-                            ObjectData.from_object(self.object).sdf_name != obj_data.sdf_name:
+                            ObjectData.from_object(self.object).sdf_name != obj_data.sdf_name or obj.name in self.collection.objects:
                         continue
 
                 # updating object
@@ -306,7 +306,7 @@ class BlenderDataNode(USDNode):
                     for key in keys_to_remove:
                         if key == world.OBJ_PRIM_NAME:
                             continue
-                            
+
                         root_prim.GetStage().RemovePrim(root_prim.GetPath().AppendChild(key))
 
                     is_updated = True
@@ -323,8 +323,8 @@ class BlenderDataNode(USDNode):
                 continue
 
         if is_updated:
-            #self.hdusd.usd_list.update_items()
-            self.reset()
+            self.hdusd.usd_list.update_items()
+            self._reset_next(True)
 
     def material_update(self, mat):
         stage = self.cached_stage()

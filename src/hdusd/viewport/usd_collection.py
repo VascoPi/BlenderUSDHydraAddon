@@ -75,8 +75,7 @@ def update(context):
 
         objects[path] = obj
 
-    paths_to_transform = set(objects.keys()) - paths_to_add
-
+    paths_to_transform = obj_paths - paths_to_remove
     log(f"Transform {len(paths_to_transform)} object")
     for path in paths_to_transform:
        objects[path].hdusd.sync_transform_from_prim(stage.GetPrimAtPath(path))
