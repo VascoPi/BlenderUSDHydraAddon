@@ -454,10 +454,12 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                     mx_node_tree = next((mat.hdusd.mx_node_tree for mat in bpy.data.materials
                                          if mat.hdusd.mx_node_tree
                                          and source_path.stem.startswith(mat.name_full)
-                                         and source_path.stem.endswith(mat.hdusd.mx_node_tree.name_full)), None)
+                                         and mat.hdusd.mx_node_tree.name_full in source_path.stem), None)
 
                     if not mx_node_tree:
-                        mat = bpy.data.materials.get(source_path.stem, None)
+                        material_name = max([mat.name_full for mat in bpy.data.materials
+                                                if source_path.stem.startswith(mat.name_full)], key=len)
+                        mat = bpy.data.materials.get(material_name, None)
                         if not mat:
                             continue
 
