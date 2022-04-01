@@ -20,6 +20,7 @@ from pxr import Usd, UsdGeom, Sdf, Gf
 
 from .base_node import USDNode
 from . import log
+from ...utils import get_temp_file
 
 
 class UsdFileNode(USDNode):
@@ -42,6 +43,12 @@ class UsdFileNode(USDNode):
         update=update_data,
     )
 
+    use_scene_camera: bpy.props.BoolProperty(
+        name="Use Scene Camera",
+        update=update_data,
+        default=False
+
+    )
     filter_path: bpy.props.StringProperty(
         name="Pattern",
         description="USD Path pattern. Use special characters means:\n"
@@ -65,6 +72,9 @@ class UsdFileNode(USDNode):
             return None
 
         input_stage = Usd.Stage.Open(file_path)
+        usd_tempfile = str(get_temp_file('.usda'))
+        input_stage.Export(usd_tempfile)
+        input_stage = Usd.Stage.Open(usd_tempfile)
 
         if self.filter_path == '/*':
             self.cached_stage.insert(input_stage)

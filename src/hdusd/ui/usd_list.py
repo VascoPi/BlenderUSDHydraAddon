@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #********************************************************************
+import os
 import traceback
 from pathlib import Path
 
@@ -420,12 +421,11 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
             log.warn(f"Unable to export USD node '{node_tree.name}':'{output_node.name}' stage: write correct file name")
             return {'CANCELLED'}
 
-        if self.is_pack_into_one_file:
-            input_stage.Export(self.filepath)
-            log.info(f"Export of '{node_tree.name}':'{output_node.name}' stage to {self.filepath}: completed successfuly")
-            return {'FINISHED'}
-
         self.check(context)
+
+        camera = input_stage.GetPrimAtPath(f'/{context.scene.camera.data.name}')
+        if camera:
+            input_stage.SetDefaultPrim(camera)
 
         new_stage = Usd.Stage.CreateNew(str(get_temp_file(".usdc")))
 
@@ -438,11 +438,13 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
 
         # we need to store all absolute paths and their relative destinations to change absolute references to relative ones
         paths_dict = {}
+        materialx_files = []
 
         def _update_layer_refs(layer, root_path=[]):
             for ref in layer.GetCompositionAssetDependencies():
                 ref_path = Path(ref)
                 ref_name = ref_path.name
+                clean_mx_node_tree = False
                 if ref_path.suffix == ".mtlx":
                     doc = mx.createDocument()
                     source_path = Path(f"{new_stage.GetPathResolverContext().Get()[0].GetSearchPath()[0]}/{ref}")
@@ -464,6 +466,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                             continue
 
                         mx_node_tree = bpy.data.node_groups.new(f"MX_{mat.name}", type=MxNodeTree.bl_idname)
+                        clean_mx_node_tree = True
 
                         mat.hdusd.mx_node_tree = mx_node_tree
 
@@ -478,24 +481,18 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                         # since we convert material only to get mx_node_tree
                         layer.UpdateCompositionAssetDependency(f"./{mat.name}{mat.hdusd.mx_node_tree.name}.mtlx", ref)
 
-                        mx_utils.export_mx_to_file(
-                            doc, dest_path,
-                            is_export_textures=True,
-                            is_export_deps=True,
-                            mx_node_tree=mx_node_tree,
-                            is_clean_texture_folder=False,
-                            is_clean_deps_folders=False)
-
-                        bpy.data.node_groups.remove(mx_node_tree)
-                        continue
-
                     mx_utils.export_mx_to_file(
                         doc, dest_path,
                         is_export_textures=True,
-                        is_export_deps=True,
+                        is_export_deps=False if self.is_pack_into_one_file else True,
                         mx_node_tree=mx_node_tree,
                         is_clean_texture_folder=False,
                         is_clean_deps_folders=False)
+
+                    if clean_mx_node_tree:
+                        bpy.data.node_groups.remove(mx_node_tree)
+
+                    materialx_files.append(dest_path)
 
                 else:
                     ref_layer_path = str(ref_path if ref_path.is_absolute()
@@ -559,6 +556,13 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                 log(f"Export file {layer.realPath} to {dest_path}: completed successfuly")
 
         _update_layer_refs(root_layer)
+
+        if self.is_pack_into_one_file:
+            input_stage.Open(self.filepath)
+            input_stage.Export(self.filepath)
+
+            for filepath in materialx_files:
+                os.remove(filepath)
 
         log.info(f"Export of USD node tree {node_tree.name_full} finished")
 
