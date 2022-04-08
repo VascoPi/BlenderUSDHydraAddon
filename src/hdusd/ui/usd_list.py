@@ -13,13 +13,15 @@
 # limitations under the License.
 #********************************************************************
 import os
+import math
+import shutil
 import traceback
 from pathlib import Path
 
 import bpy
 import MaterialX as mx
 
-from pxr import UsdGeom, Usd, Sdf, UsdShade
+from pxr import UsdGeom, Usd, Sdf, UsdShade, UsdLux
 from bpy_extras.io_utils import ExportHelper
 
 from . import HdUSD_Panel, HdUSD_ChildPanel, HdUSD_Operator
@@ -30,7 +32,7 @@ from ..engine.viewport_engine import ViewportEngineNodetree
 from .. import config
 from ..utils import get_temp_file, temp_pid_dir
 from ..utils import mx as mx_utils
-from ..export import material
+from ..export import material, world
 from ..utils import usd as usd_utils
 
 from ..utils import logging
@@ -556,6 +558,34 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                 log(f"Export file {layer.realPath} to {dest_path}: completed successfuly")
 
         _update_layer_refs(root_layer)
+
+        data = world.WorldData.init_from_world(bpy.context.scene.world)
+        root_prim = new_stage.GetPseudoRoot()
+        stage = root_prim.GetStage()
+
+        obj_prim = stage.DefinePrim(root_prim.GetPath().AppendChild(world.OBJ_PRIM_NAME))
+        usd_light = UsdLux.DomeLight.Define(stage, obj_prim.GetPath().AppendChild(world.LIGHT_PRIM_NAME))
+        light_prim = usd_light.GetPrim()
+        usd_light.OrientToStageUpAxis()
+
+        dest_path = f"{dest_path_root_dir} / textures / {Path(data.image).name}"
+
+        if data.image:
+            shutil.copy(data.image, dest_path)
+            tex_attr = usd_light.CreateTextureFileAttr()
+            usd_utils.add_delegate_variants(obj_prim, {
+                'GL': lambda: tex_attr.Set(""),
+                'RPR': lambda: tex_attr.Set(str(dest_path))
+            })
+
+        usd_light.CreateColorAttr(data.color)
+
+        usd_light.CreateIntensityAttr(data.intensity)
+        light_prim.CreateAttribute("inputs:transparency", Sdf.ValueTypeNames.Float).Set(data.transparency)
+
+        # set correct Dome light rotation
+        # usd_light.AddRotateXOp().Set(180.0)
+        # usd_light.AddRotateYOp().Set(-90.0 + math.degrees(data.rotation[2]))
 
         if self.is_pack_into_one_file:
             input_stage.Open(self.filepath)
