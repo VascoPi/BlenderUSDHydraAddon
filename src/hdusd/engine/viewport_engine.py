@@ -310,7 +310,18 @@ class ViewportEngine(Engine):
         settings = self.get_settings(scene)
 
         self.is_gl_delegate = settings.is_gl_delegate
-        self.renderer.SetRendererPlugin(settings.delegate)
+
+        try:
+            self.renderer.SetRendererPlugin(settings.delegate)
+
+        # special case for python 3.10 - first enable of viewport rendering throws exception
+        # GlfSimpleShadowArray::_FreeBindlessTextures(void)'
+        # called from UsdImagingGLEngine::_DestroyHydraObjects()
+        except Exception as e:
+            if isinstance(e, Tf.ErrorException) and "GL error: invalid value" in str(e):
+                pass  # we won't log error "GL error: invalid value"
+            else:
+                log.error(e)
 
         if settings.delegate == 'HdRprPlugin':
             hdrpr = settings.hdrpr
@@ -413,6 +424,9 @@ class ViewportEngineScene(ViewportEngine):
                 if obj.type == 'LIGHT' and not self.shading_data.use_scene_lights:
                     continue
 
+                # We need to update collection in any case of editing object because Blender doesn't have "is_hide" property
+                update_collection = True
+
                 obj_data = object.ObjectData.from_object(obj)
 
                 object.sync_update(root_prim, obj_data,
@@ -421,7 +435,10 @@ class ViewportEngineScene(ViewportEngine):
                                    is_gl_delegate=self.is_gl_delegate)
 
                 for inst_obj_data in object.ObjectData.depsgraph_objects_inst(depsgraph):
-                    if obj_data.sdf_name == object.sdf_name(inst_obj_data.object):
+
+                    if obj_data.sdf_name == object.sdf_name(inst_obj_data.parent) \
+                            or obj_data.sdf_name == object.sdf_name(inst_obj_data.object):
+
                         object.sync_update(root_prim, inst_obj_data, update.is_updated_geometry,
                                            update.is_updated_transform)
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ********************************************************************
+import sys
 from pathlib import Path
 import subprocess
 import os
@@ -77,6 +78,10 @@ def _cmake(d, compiler, jobs, build_var, args):
     if compiler:
         build_args += ['-G', compiler]
 
+    if build_var == 'relwithdebuginfo' and OS == 'Windows':
+        # disabling optimization for debug purposes
+        build_args.append(f'USD,-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/Od"')
+
     build_name = {'release': 'Release',
                   'debug': 'Debug',
                   'relwithdebuginfo': 'RelWithDebInfo'}[build_var]
@@ -112,6 +117,7 @@ def hdrpr(bin_dir, compiler, jobs, clean, build_var):
         f'-Dpxr_DIR={usd_dir}',
         f'-DCMAKE_INSTALL_PREFIX={bin_dir / "USD/install"}',
         '-DRPR_BUILD_AS_HOUDINI_PLUGIN=FALSE',
+        f'-DPYTHON_EXECUTABLE={sys.executable}',
     ])
 
 

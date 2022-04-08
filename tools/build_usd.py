@@ -16,7 +16,7 @@ import sys
 import os
 from pathlib import Path
 
-from build import rm_dir, check_call
+from build import rm_dir, check_call, OS
 
 
 def main(bin_dir, clean, build_var, *args):
@@ -45,7 +45,11 @@ in USD repository.
         # Temporary implements https://github.com/PixarAnimationStudios/USD/pull/1610
         # TODO: remove this after up USD to >= 2203 and implement their own fix
         #  https://github.com/PixarAnimationStudios/USD/commit/adfc04eea92b91965b0da68503539b079a5d30d9
-        check_call('git', 'apply', str(repo_dir / "tools/data/USD_MaterialX.patch"))
+        check_call('git', 'apply', '--whitespace=nowarn', str(repo_dir / "tools/data/USD_MaterialX.patch"))
+
+        # applying patch data/USD_deps.patch
+        # fixes issues with building USD on python 3.10
+        check_call('git', 'apply', str(repo_dir / "tools/data/USD_deps.patch"))
 
         # modifying pxr/usdImaging/CMakeLists.txt
         usd_imaging_lite_path = repo_dir / "deps/UsdImagingLite/pxr/usdImaging/usdImagingLite"
@@ -58,14 +62,19 @@ add_subdirectory("{usd_imaging_lite_path.absolute().as_posix()}" usdImagingLite)
         """)
 
         bin_usd_dir = bin_dir / "USD"
+        build_args = [f'MATERIALX,-DMATERIALX_BUILD_PYTHON=ON -DMATERIALX_INSTALL_PYTHON=OFF '
+                      f'-DMATERIALX_PYTHON_EXECUTABLE="{sys.executable}"']
+        if build_var == 'relwithdebuginfo' and OS == 'Windows':
+            # disabling optimization for debug purposes
+            build_args.append(f'USD,-DCMAKE_CXX_FLAGS_RELWITHDEBINFO="/Od"')
+
         call_args = (sys.executable, str(usd_dir / "build_scripts/build_usd.py"),
                      '--verbose',
                      '--build', str(bin_usd_dir / "build"),
                      '--src', str(bin_usd_dir / "deps"),
                      '--materialx',
                      '--openvdb',
-                     '--build-args', f'MATERIALX,-DMATERIALX_BUILD_PYTHON=ON -DMATERIALX_INSTALL_PYTHON=OFF '
-                                     f'-DMATERIALX_PYTHON_EXECUTABLE="{sys.executable}"',
+                     '--build-args', *build_args,
                      '--python',
                      '--build-variant', build_var,
                      str(bin_usd_dir / "install"),
