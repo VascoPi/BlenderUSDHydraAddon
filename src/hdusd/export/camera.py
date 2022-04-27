@@ -175,6 +175,28 @@ class CameraData:
 
         return data
 
+    @staticmethod
+    def init_from_usd_camera(usd_camera):
+        data = CameraData()
+
+        transform_matrix = usd_camera.GetParent().GetAttribute('xformOp:transform').Get()
+        translate_matrix = usd_camera.GetParent().GetAttribute('xformOp:translate').Get()
+
+        data.transform = transform_matrix if transform_matrix else translate_matrix
+
+        data.mode = usd_camera.GetProjectionAttr().Get()
+        data.focal_length = usd_camera.GetFocalLengthAttr().Get()
+
+        horizontal_aperture = usd_camera.GetHorizontalApertureAttr().Get()
+        vertical_aperture = usd_camera.GetVerticalApertureAttr().Get()
+
+        horizontal_aperture_offset = usd_camera.GetHorizontalApertureOffsetAttr().Get()
+        vertical_aperture_offset = usd_camera.GetVerticalApertureOffsetAttr().Get()
+
+        return data
+
+
+
     def export(self, usd_camera, tile=((0.0, 0.0), (1.0, 1.0))):
         tile_pos, tile_size = tile
 
@@ -284,6 +306,14 @@ class CameraData:
         gf_camera.transform = Gf.Matrix4d(np.transpose(self.transform))
 
         return gf_camera
+
+    def export_to_camera(self, camera: bpy.types.Object):
+        camera.matrix_world = self.transform
+        camera_data = camera.data
+        camera_data.type = self.mode
+        camera_data.lens = self.focal_length
+
+
 
 
 def sync(obj_prim, obj: bpy.types.Object, **kwargs):

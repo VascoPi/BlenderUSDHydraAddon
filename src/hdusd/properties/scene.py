@@ -13,9 +13,10 @@
 # limitations under the License.
 #********************************************************************
 import bpy
-from pxr import UsdImagingGL
+from pxr import UsdImagingGL, UsdGeom
 
 from ..viewport import usd_collection
+from ..export.camera import CameraData
 from . import HdUSDProperties, hdrpr_render, log
 
 
@@ -129,6 +130,8 @@ class ViewportRenderSettings(RenderSettings):
         for prim in stage.TraverseAll():
             if prim.GetTypeName() == "Camera":
                 self.nodetree_camera = prim.GetPath().pathString
+                usd_camera = UsdGeom.Camera.Get(stage, prim.GetPath())
+                camera_settings = CameraData.init_from_usd_camera(usd_camera)
                 viewport_camera = context.scene.objects.get("USD_Viewport_Camera", None)
                 if not viewport_camera:
                     camera_data = bpy.data.cameras.new("USD_Viewport_Camera")
@@ -139,15 +142,7 @@ class ViewportRenderSettings(RenderSettings):
                 else:
                     camera_data = viewport_camera.data
 
-                transform_matrix = prim.GetParent().GetAttribute('xformOp:transform').Get()
-                if transform_matrix:
-                    viewport_camera.matrix_world = transform_matrix
-
-                translate_matrix = prim.GetParent().GetAttribute('xformOp:translate').Get()
-                if translate_matrix:
-                    viewport_camera.location = translate_matrix
-
-                camera_data.lens = prim.GetAttribute('focalLength').Get()
+                camera_settings.export_to_camera(camera_data)
                 break
 
 
