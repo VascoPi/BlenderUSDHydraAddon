@@ -13,15 +13,19 @@
 # limitations under the License.
 #********************************************************************
 import bpy
-from pxr import UsdImagingGL, UsdGeom
+import os
+from pxr import UsdImagingGL
 
 from ..viewport import usd_collection
-from ..export.camera import CameraData
 from . import HdUSDProperties, hdrpr_render, log
 
 
 _render_delegates = {name: UsdImagingGL.Engine.GetRendererDisplayName(name)
                      for name in UsdImagingGL.Engine.GetRendererPlugins()}
+
+if not os.path.isdir(os.environ.get('RMANTREE', "")):
+    _render_delegates.pop('HdPrmanLoaderRendererPlugin', None)
+
 log("Render Delegates", _render_delegates)
 
 
@@ -101,49 +105,6 @@ class ViewportRenderSettings(RenderSettings):
         default="",
         update=data_source_update
     )
-    nodetree_camera: bpy.props.StringProperty(
-        name="Camera",
-        description="Select camera from USD for viewport render",
-        default=""
-    )
-    def nodetree_update(self, context):
-        if not self.data_source:
-            self.nodetree_camera = ""
-            return
-
-        output_node = bpy.data.node_groups[self.data_source].get_output_node()
-        if not output_node:
-            self.nodetree_camera = ""
-            return
-
-        stage = output_node.cached_stage()
-        if not stage:
-            self.nodetree_camera = ""
-            return
-
-        if self.nodetree_camera:
-            prim = stage.GetPrimAtPath(self.nodetree_camera)
-            if prim and prim.GetTypeName() == "Camera":
-                return
-
-        self.nodetree_camera = ""
-        for prim in stage.TraverseAll():
-            if prim.GetTypeName() == "Camera":
-                self.nodetree_camera = prim.GetPath().pathString
-                usd_camera = UsdGeom.Camera.Get(stage, prim.GetPath())
-                camera_settings = CameraData.init_from_usd_camera(usd_camera)
-                viewport_camera = context.scene.objects.get("USD_Viewport_Camera", None)
-                if not viewport_camera:
-                    camera_data = bpy.data.cameras.new("USD_Viewport_Camera")
-                    viewport_camera = bpy.data.objects.new("USD_Viewport_Camera", camera_data)
-                    context.scene.collection.objects.link(viewport_camera)
-                    context.scene.camera = viewport_camera
-
-                else:
-                    camera_data = viewport_camera.data
-
-                camera_settings.export_to_camera(camera_data)
-                break
 
 
 class SceneProperties(HdUSDProperties):
