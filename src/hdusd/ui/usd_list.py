@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #********************************************************************
+import os
+import shutil
 import traceback
 from pathlib import Path
 
 import bpy
 import MaterialX as mx
 
-from pxr import UsdGeom, Usd, Sdf, UsdShade
+from pxr import UsdGeom, Usd, Sdf, UsdShade, UsdLux
 from bpy_extras.io_utils import ExportHelper
 
 from . import HdUSD_Panel, HdUSD_ChildPanel, HdUSD_Operator
@@ -420,12 +422,61 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
             log.warn(f"Unable to export USD node '{node_tree.name}':'{output_node.name}' stage: write correct file name")
             return {'CANCELLED'}
 
+        self.check(context)
+
+        scene_camera = context.scene.camera
+        if scene_camera:
+            camera = input_stage.GetPrimAtPath(f'/{context.scene.camera.data.name}')
+            if camera:
+                input_stage.SetDefaultPrim(camera)
+
+        def resolve_path(light_obj):
+            tex_attr = light_obj.GetTextureFileAttr()
+            src_filepath = tex_attr.Get()
+            if src_filepath:
+                dest_path = texture_dir_abs / Path(src_filepath.path).name
+                if not os.path.exists(dest_path):
+                    Path(dest_path).mkdir(parents=True, exist_ok=True)
+
+                shutil.copy(src_filepath.path, str(dest_path))
+                tex_attr.Set(str(texture_dir_rel / Path(src_filepath.path).name))
+
+        dest_path_root_dir = Path(self.filepath).parent
+        texture_dir_abs = dest_path_root_dir / "textures"
+        texture_dir_rel = texture_dir_abs.relative_to(dest_path_root_dir)
+        for prim in input_stage.TraverseAll():
+            if prim.GetTypeName() == 'DomeLight':
+                world_prim = prim.GetParent()
+                light_obj = UsdLux.DomeLight.Get(input_stage, prim.GetPath())
+                if world_prim.IsValid():
+                   if 'delegate' in world_prim.GetVariantSets().GetNames():
+                       vset = world_prim.GetVariantSet('delegate')
+                       for name in vset.GetVariantNames():
+                           vset.SetVariantSelection(name)
+                           with vset.GetVariantEditContext():
+                               resolve_path(light_obj)
+
+                           if self.is_pack_into_one_file:
+                               vset.ClearVariantSelection()
+                   else:
+                       resolve_path(light_obj)
+
+            if self.is_pack_into_one_file:
+                if prim.GetTypeName() == 'Shader':
+                    asset_path_attr = prim.GetAttribute('inputs:file')
+                    asset_src_path = asset_path_attr.Get()
+                    if not asset_src_path:
+                        continue
+
+                    if not os.path.isdir(texture_dir_abs):
+                        Path(str(texture_dir_abs)).mkdir(parents=True, exist_ok=True)
+
+                    shutil.copy(str(asset_src_path.path), str(texture_dir_abs / Path(asset_src_path.path).name))
+                    asset_path_attr.Set(str(texture_dir_rel / Path(asset_src_path.path).name))
+
         if self.is_pack_into_one_file:
             input_stage.Export(self.filepath)
-            log.info(f"Export of '{node_tree.name}':'{output_node.name}' stage to {self.filepath}: completed successfuly")
             return {'FINISHED'}
-
-        self.check(context)
 
         new_stage = Usd.Stage.CreateNew(str(get_temp_file(".usdc")))
 
@@ -454,10 +505,12 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                     mx_node_tree = next((mat.hdusd.mx_node_tree for mat in bpy.data.materials
                                          if mat.hdusd.mx_node_tree
                                          and source_path.stem.startswith(mat.name_full)
-                                         and source_path.stem.endswith(mat.hdusd.mx_node_tree.name_full)), None)
+                                         and mat.hdusd.mx_node_tree.name_full in source_path.stem), None)
 
                     if not mx_node_tree:
-                        mat = bpy.data.materials.get(source_path.stem, None)
+                        material_name = max([mat.name_full for mat in bpy.data.materials
+                                                if source_path.stem.startswith(mat.name_full)], key=len)
+                        mat = bpy.data.materials.get(material_name, None)
                         if not mat:
                             continue
 

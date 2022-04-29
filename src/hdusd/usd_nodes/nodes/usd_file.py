@@ -16,10 +16,11 @@ import os
 import re
 
 import bpy
-from pxr import Usd, UsdGeom, Sdf, Gf
+from pxr import Usd, UsdGeom, Sdf, Gf, UsdLux, UsdShade
 
 from .base_node import USDNode
 from . import log
+from ...utils import get_temp_file
 
 
 class UsdFileNode(USDNode):
@@ -65,6 +66,31 @@ class UsdFileNode(USDNode):
             return None
 
         input_stage = Usd.Stage.Open(file_path)
+
+        for prim in input_stage.TraverseAll():
+            if prim.GetTypeName() == 'DomeLight':
+                world_prim = prim.GetParent()
+                light_obj = UsdLux.DomeLight.Get(input_stage, prim.GetPath())
+                if world_prim.IsValid():
+                    if 'delegate' in world_prim.GetVariantSets().GetNames():
+                        vset = world_prim.GetVariantSet('delegate')
+                        for name in world_prim.GetVariantSet('delegate').GetVariantNames():
+                            vset.SetVariantSelection(name)
+                            with vset.GetVariantEditContext():
+                                tex_attr = light_obj.GetTextureFileAttr()
+                                src_filepath = tex_attr.Get()
+                                if src_filepath:
+                                    tex_attr.Set(src_filepath.resolvedPath)
+
+                    else:
+                        tex_attr = light_obj.GetTextureFileAttr()
+                        src_filepath = tex_attr.Get()
+                        if src_filepath:
+                            tex_attr.Set(src_filepath.resolvedPath)
+
+        tempfile = str(get_temp_file(".usda"))
+        input_stage.Export(tempfile)
+        input_stage = Usd.Stage.Open(tempfile)
 
         if self.filter_path == '/*':
             self.cached_stage.insert(input_stage)
