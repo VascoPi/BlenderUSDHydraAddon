@@ -21,8 +21,8 @@ bl_info = {
     "location": "Info header, render engine menu",
     "description": "USD Hydra rendering plugin for Blender",
     "warning": "",
-    "tracker_url": "",
-    "doc_url": "",
+    "tracker_url": "https://github.com/GPUOpen-LibrariesAndSDKs/BlenderUSDHydraAddon/issues",
+    "doc_url": "https://radeon-pro.github.io/RadeonProRenderDocs/en/usd_hydra/about.html",
     "category": "Render"
 }
 version_build = ""
@@ -51,7 +51,7 @@ class UsdAddonPreferences(AddonPreferences):
             return
 
         tempfile.tempdir = Path(self.tmp_dir)
-        log.info(f"Current temp directory is changed to {self.tmp_dir}")
+        log.info(f"Current temp directory is changed to {self.tmp_dir}{id(self.tmp_dir)}")
 
     def update_dev_tools(self, context):
         config.show_dev_settings = self.dev_tools
@@ -66,7 +66,7 @@ class UsdAddonPreferences(AddonPreferences):
         description="Set temp directory",
         maxlen=1024,
         subtype='DIR_PATH',
-        default=str(temp_dir().parent),
+        default=str(temp_dir()),
         update=update_temp_dir,
     )
     dev_tools: BoolProperty(
