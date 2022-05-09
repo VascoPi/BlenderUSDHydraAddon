@@ -3,9 +3,9 @@
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
-# 
+#
 #     http://www.apache.org/licenses/LICENSE-2.0
-# 
+#
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,10 @@ bl_info = {
     "warning": "",
     "tracker_url": "https://github.com/GPUOpen-LibrariesAndSDKs/BlenderUSDHydraAddon/issues",
     "doc_url": "https://radeon-pro.github.io/RadeonProRenderDocs/en/usd_hydra/about.html",
-    "category": "Render"
+    "category": "Render",
+    "community": "https://github.com/GPUOpen-LibrariesAndSDKs/BlenderUSDHydraAddon/discussions",
+    "downloads": "https://www.amd.com/en/technologies/radeon-prorender-downloads",
+    "main_web": "https://www.amd.com/en/technologies/radeon-prorender",
 }
 version_build = ""
 
@@ -42,23 +45,22 @@ from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
 class UsdAddonPreferences(AddonPreferences):
     bl_idname = __name__
 
-    def update_temp_dir(self, context):
-        if tempfile.gettempdir() == str(Path(self.tmp_dir)):
-            log.info(f"Current temp directory is {self.tmp_dir}")
-            return
-
-        if not Path(self.tmp_dir).exists():
+    def update_temp_dir(self, value):
+        if not Path(self.tmp_dir).exists() or tempfile.gettempdir() == str(Path(self.tmp_dir)):
+            log.info(f"Current temp directory is {tempfile.gettempdir()}")
             return
 
         tempfile.tempdir = Path(self.tmp_dir)
-        log.info(f"Current temp directory is changed to {self.tmp_dir}{id(self.tmp_dir)}")
+        bpy.context.preferences.addons[__name__].preferences['tmp_dir'] = str(temp_dir())
+        log.info(f"Current temp directory is changed to {bpy.context.preferences.addons[__name__].preferences.tmp_dir}")
 
     def update_dev_tools(self, context):
         config.show_dev_settings = self.dev_tools
         log.info(f"Developer settings is {'enabled' if self.dev_tools else 'disabled'}")
 
     def update_debug_log(self, context):
-        config.logging_level = 'DEBUG' if self.debug_log else 'INFO'
+        logging_level = 'DEBUG' if self.debug_log else config.logging_level
+        logging.logger.setLevel(logging_level)
         log.info(f"Log level 'DEBUG' is {'enabled' if self.debug_log else 'disabled'}")
 
     tmp_dir: StringProperty(
@@ -78,14 +80,21 @@ class UsdAddonPreferences(AddonPreferences):
     debug_log: BoolProperty(
         name="Debug",
         description="Enable debug console output",
-        default= config.logging_level != 'INFO',
+        default=logging.logger.level == 'DEBUG',
         update=update_debug_log,
     )
     def draw(self, context):
+        wm = context.window_manager
         layout = self.layout
-        layout.prop(self, "tmp_dir", icon='NONE' if Path(self.tmp_dir).exists() else 'ERROR')
-        layout.prop(self, "dev_tools")
-        layout.prop(self, "debug_log")
+        col = layout.column()
+        col.prop(self, "tmp_dir", icon='NONE' if Path(self.tmp_dir).exists() else 'ERROR')
+        col.prop(self, "dev_tools")
+        col.prop(self, "debug_log")
+        col.separator()
+        row = col.row()
+        row.operator("wm.url_open", text="Main Site", icon='URL').url = bl_info["main_web"]
+        row.operator("wm.url_open", text="Community", icon='COMMUNITY').url = bl_info["community"]
+        row.operator("wm.url_open", text="Downloads", icon='TRIA_DOWN_BAR').url = bl_info["downloads"]
 
 
 log = logging.Log('init')
@@ -98,13 +107,13 @@ def register():
     """ Register all addon classes in Blender """
     log("register")
 
-    bpy.utils.register_class(UsdAddonPreferences)
     engine.register()
     bl_nodes.register()
     mx_nodes.register()
     usd_nodes.register()
     properties.register()
     ui.register()
+    bpy.utils.register_class(UsdAddonPreferences)
 
 
 def unregister():
