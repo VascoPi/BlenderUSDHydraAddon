@@ -38,8 +38,8 @@ from . import config
 from .utils import logging, temp_dir
 
 import bpy
-from bpy.types import Operator, AddonPreferences
-from bpy.props import StringProperty, IntProperty, BoolProperty, EnumProperty
+from bpy.types import AddonPreferences
+from bpy.props import StringProperty, BoolProperty
 
 
 class UsdAddonPreferences(AddonPreferences):
