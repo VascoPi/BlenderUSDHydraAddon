@@ -285,6 +285,13 @@ class FinalEngine(Engine):
             renderer.SetRendererSetting('rpr:denoising:minIter', denoise.min_iter)
             renderer.SetRendererSetting('rpr:denoising:iterStep', denoise.iter_step)
 
+        if settings.delegate == 'HdPrmanLoaderRendererPlugin':
+            hdprman = settings.hdprman
+            renderer.SetRendererSetting('convergedSamplesPerPixelMin', hdprman.min_samples)
+            renderer.SetRendererSetting('convergedSamplesPerPixel', hdprman.max_samples)
+            renderer.SetRendererSetting('convergedVariance', hdprman.variance_threshold)
+            renderer.SetRendererSetting('interactiveIntegratorTimeout', hdprman.timeout)
+
         return True
 
 

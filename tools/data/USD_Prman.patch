@@ -1,0 +1,77 @@
+Index: third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp b/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
+--- a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp	(revision faed18ce62c8736b02413635b584a2f637156bad)
++++ b/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp	(date 1653503158437)
+@@ -130,16 +130,17 @@
+ 
+     // 64 samples is RenderMan default
+     int maxSamples = TfGetenvInt("HD_PRMAN_MAX_SAMPLES", 64);
++    int minSamples = 1;
+ 
+     float pixelVariance = 0.001f;
+ 
+     // Prepare list of render settings descriptors
+-    _settingDescriptors.resize(5);
++    _settingDescriptors.resize(6);
+ 
+-    _settingDescriptors[0] = { 
++    _settingDescriptors[0] = {
+         std::string("Integrator"),
+         HdPrmanRenderSettingsTokens->integratorName,
+-        VtValue(integrator) 
++        VtValue(integrator)
+     };
+ 
+     _settingDescriptors[1] = {
+@@ -164,6 +165,10 @@
+         HdRenderSettingsTokens->convergedVariance,
+         VtValue(pixelVariance) };
+ 
++    _settingDescriptors[5] = { std::string("Min Samples"),
++        HdRenderSettingsTokens->convergedSamplesPerPixelMin,
++        VtValue(minSamples) };
++
+     _PopulateDefaultSettings(_settingDescriptors);
+ 
+     if (_IsInteractive()) {
+Index: pxr/imaging/hd/tokens.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pxr/imaging/hd/tokens.h b/pxr/imaging/hd/tokens.h
+--- a/pxr/imaging/hd/tokens.h	(revision faed18ce62c8736b02413635b584a2f637156bad)
++++ b/pxr/imaging/hd/tokens.h	(date 1653503324383)
+@@ -363,6 +363,7 @@
+     /* Raytracer sampling settings */                 \
+     (convergedVariance)                               \
+     (convergedSamplesPerPixel)                        \
++    (convergedSamplesPerPixelMin)                     \
+     /* thread limit settings */                       \
+     (threadLimit)                                     \
+     /* interactive vs offline */                      \
+Index: third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp b/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
+--- a/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp	(revision faed18ce62c8736b02413635b584a2f637156bad)
++++ b/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp	(date 1653502796441)
+@@ -217,7 +217,11 @@
+             HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
+         int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
+             vtMaxSamples.UncheckedGet<int>() : 16;
+-        _options.SetInteger(RixStr.k_hider_minsamples, 1);
++        VtValue vtMinSamples = renderDelegate->GetRenderSetting(
++            HdRenderSettingsTokens->convergedSamplesPerPixelMin).Cast<int>();
++        int minSamples = TF_VERIFY(!vtMinSamples.IsEmpty()) ?
++            vtMinSamples.UncheckedGet<int>() : 1;
++        _options.SetInteger(RixStr.k_hider_minsamples, minSamples);
+         _options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+ 
+         // Read the variance threshold out of settings (if it exists). Use a

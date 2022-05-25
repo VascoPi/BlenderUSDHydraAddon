@@ -51,6 +51,10 @@ in USD repository.
         # fixes issues with building USD on python 3.10
         check_call('git', 'apply', str(repo_dir / "tools/data/USD_deps.patch"))
 
+        # applying patch data/USD_Prman.patch
+        # Implements convergedSamplesPerPixelMin parameter for min_samples
+        check_call('git', 'apply', str(repo_dir / "tools/data/USD_Prman.patch"))
+
         # modifying pxr/usdImaging/CMakeLists.txt
         usd_imaging_lite_path = repo_dir / "deps/UsdImagingLite/pxr/usdImaging/usdImagingLite"
 
