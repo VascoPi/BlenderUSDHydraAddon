@@ -1,11 +1,6 @@
-Index: third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
 diff --git a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp b/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
---- a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp	(revision faed18ce62c8736b02413635b584a2f637156bad)
-+++ b/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp	(date 1653503158437)
+--- a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
++++ b/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp
 @@ -130,16 +130,17 @@
  
      // 64 samples is RenderMan default
@@ -38,14 +33,10 @@ diff --git a/third_party/renderman-24/plugin/hdPrman/renderDelegate.cpp b/third_
      _PopulateDefaultSettings(_settingDescriptors);
  
      if (_IsInteractive()) {
-Index: pxr/imaging/hd/tokens.h
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
+
 diff --git a/pxr/imaging/hd/tokens.h b/pxr/imaging/hd/tokens.h
---- a/pxr/imaging/hd/tokens.h	(revision faed18ce62c8736b02413635b584a2f637156bad)
-+++ b/pxr/imaging/hd/tokens.h	(date 1653503324383)
+--- a/pxr/imaging/hd/tokens.h
++++ b/pxr/imaging/hd/tokens.h
 @@ -363,6 +363,7 @@
      /* Raytracer sampling settings */                 \
      (convergedVariance)                               \
@@ -54,14 +45,10 @@ diff --git a/pxr/imaging/hd/tokens.h b/pxr/imaging/hd/tokens.h
      /* thread limit settings */                       \
      (threadLimit)                                     \
      /* interactive vs offline */                      \
-Index: third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
-IDEA additional info:
-Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
-<+>UTF-8
-===================================================================
+
 diff --git a/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp b/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
---- a/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp	(revision faed18ce62c8736b02413635b584a2f637156bad)
-+++ b/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp	(date 1653502796441)
+--- a/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
++++ b/third_party/renderman-24/plugin/hdPrman/interactiveContext.cpp
 @@ -217,7 +217,11 @@
              HdRenderSettingsTokens->convergedSamplesPerPixel).Cast<int>();
          int maxSamples = TF_VERIFY(!vtMaxSamples.IsEmpty()) ?
