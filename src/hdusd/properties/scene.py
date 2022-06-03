@@ -41,6 +41,9 @@ class RenderSettings(bpy.types.PropertyGroup):
 
     @property
     def delegate_name(self):
+        if not self.delegate:
+            self['delegate'] = 'HdRprPlugin'
+
         return _render_delegates[self.delegate]
 
     hdrpr: bpy.props.PointerProperty(type=hdrpr_render.RenderSettings)
