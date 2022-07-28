@@ -55,6 +55,10 @@ class HDUSD_ADDON_PT_preferences(AddonPreferences):
         bpy.context.preferences.addons[__name__].preferences['tmp_dir'] = str(temp_dir())
         log.info(f"Current temp directory is changed to {bpy.context.preferences.addons[__name__].preferences.tmp_dir}")
 
+    def update_materialx_rpr_export(self, context):
+        config.materialx_rpr_export = self.materialx_rpr_export
+        log.info(f"MaterialX RPR Export is {'enabled' if self.materialx_rpr_export else 'disabled'}")
+
     def update_dev_tools(self, context):
         config.show_dev_settings = self.dev_tools
         log.info(f"Developer settings is {'enabled' if self.dev_tools else 'disabled'}")
@@ -77,6 +81,12 @@ class HDUSD_ADDON_PT_preferences(AddonPreferences):
         default=config.show_dev_settings,
         update=update_dev_tools,
     )
+    materialx_rpr_export: BoolProperty(
+        name="Materialx Rpr Export",
+        description="",
+        default=config.materialx_rpr_export,
+        update=update_materialx_rpr_export,
+    )
     log_level: EnumProperty(
         name="Log Level",
         description="Select logging level",
@@ -87,13 +97,13 @@ class HDUSD_ADDON_PT_preferences(AddonPreferences):
                ('CRITICAL', "Critical", "Log level CRITICAL")),
         default=getLevelName(logging.logger.level),
         update=update_log_level,
-
     )
     def draw(self, context):
         layout = self.layout
         col = layout.column()
         col.prop(self, "tmp_dir", icon='NONE' if Path(self.tmp_dir).exists() else 'ERROR')
         col.prop(self, "dev_tools")
+        col.prop(self, "materialx_rpr_export")
         col.prop(self, "log_level")
         col.separator()
         row = col.row()

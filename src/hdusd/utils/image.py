@@ -29,12 +29,11 @@ READONLY_IMAGE_FORMATS = {".dds"}  # blender can read these formats, but can't w
 
 def cache_image_file(image: bpy.types.Image, cache_check=True):
     image_path = Path(image.filepath_from_user())
+    image_suffix = image_path.suffix.lower()
     if not image.packed_file and image.source != 'GENERATED':
         if not image_path.is_file():
             log.warn("Image is missing", image, image_path)
             return None
-
-        image_suffix = image_path.suffix.lower()
 
         if image_suffix in SUPPORTED_FORMATS and\
                 f".{image.file_format.lower()}" in SUPPORTED_FORMATS and not image.is_dirty:
@@ -43,7 +42,8 @@ def cache_image_file(image: bpy.types.Image, cache_check=True):
         if image_suffix in READONLY_IMAGE_FORMATS:
             return image_path
 
-    temp_path = get_temp_file(DEFAULT_FORMAT, image_path.stem)
+    temp_path = get_temp_file(f".{image.file_format.lower()}" if image_suffix in SUPPORTED_FORMATS and f".{image.file_format.lower()}" in SUPPORTED_FORMATS else DEFAULT_FORMAT, image_path.stem)
+    print(temp_path)
     if cache_check and image.source != 'GENERATED' and temp_path.is_file():
         return temp_path
 
@@ -56,7 +56,7 @@ def cache_image_file(image: bpy.types.Image, cache_check=True):
     if not user_color_mode:
         user_color_mode = 'RGB'
 
-    scene.render.image_settings.file_format = BLENDER_DEFAULT_FORMAT
+    scene.render.image_settings.file_format = temp_path.suffix.upper().replace('.', '')
     scene.render.image_settings.color_mode = BLENDER_DEFAULT_COLOR_MODE
 
     try:

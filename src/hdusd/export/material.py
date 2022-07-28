@@ -19,6 +19,7 @@ import MaterialX as mx
 
 from .. import utils
 from ..utils import logging
+from .. import config
 log = logging.Log('export.material')
 
 
@@ -49,12 +50,26 @@ def sync(materials_prim, mat: bpy.types.Material, obj: bpy.types.Object):
                            if node.getCategory() == 'surfacematerial')
 
     stage = materials_prim.GetStage()
+    mat_path = materials_prim.GetPath().AppendChild(sdf_name(mat))
 
-    override_prim = stage.OverridePrim(materials_prim.GetPath().AppendChild(sdf_name(mat)))
-    override_prim.GetReferences().AddReference(f"./{mx_file.name}", "/MaterialX")
+    if not config.materialx_rpr_export:
+        override_prim = stage.OverridePrim(mat_path)
+        override_prim.GetReferences().AddReference(f"./{mx_file.name}", "/MaterialX")
 
-    usd_mat = UsdShade.Material.Define(stage, override_prim.GetPath().AppendChild('Materials').
-                                       AppendChild(surfacematerial.getName()))
+        usd_mat = UsdShade.Material.Define(stage, override_prim.GetPath().AppendChild('Materials').
+                                           AppendChild(surfacematerial.getName()))
+
+    else:
+        usd_mat = UsdShade.Material.Define(stage, mat_path)
+        shader = UsdShade.Shader.Define(stage, usd_mat.GetPath().AppendChild("rpr_materialx_node"))
+        shader.CreateIdAttr("rpr_materialx_node")
+
+        shader.CreateInput("file", Sdf.ValueTypeNames.Asset).Set(f"./{mx_file.name}")
+
+        out_mat = usd_mat.CreateSurfaceOutput("rpr")
+        out_shader = shader.CreateOutput('surface', Sdf.ValueTypeNames.Token)
+        out_mat.ConnectToSource(out_shader)
+        # shader.CreateInput("stPrimvarName", Sdf.ValueTypeNames.String).Set("UVMap")
 
     return usd_mat
 

@@ -19,7 +19,7 @@ from pathlib import Path
 import bpy
 import MaterialX as mx
 
-from pxr import UsdGeom, Usd, Sdf, UsdShade, UsdLux
+from pxr import UsdGeom, Usd, Sdf, UsdShade, UsdLux, Ar
 from bpy_extras.io_utils import ExportHelper
 
 from . import HdUSD_Panel, HdUSD_ChildPanel, HdUSD_Operator
@@ -284,6 +284,8 @@ class HDUSD_OP_usd_tree_node_print_stage(HdUSD_Operator):
 
     def execute(self, context):
         tree = context.space_data.edit_tree
+        tree.reset()
+
 
         node = context.active_node
         if not node:
@@ -314,6 +316,7 @@ class HDUSD_OP_usd_tree_node_print_root_layer(HdUSD_Operator):
 
     def execute(self, context):
         tree = context.space_data.edit_tree
+        tree.reset()
         node = context.active_node
         if not node:
             log(f"Unable to print USD nodetree \"{tree.name}\" stage: no USD node selected")
@@ -384,6 +387,10 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
     def get_frame_end(self):
         return self.get('frame_end', 0)
 
+    def update_materialx_rpr_export(self, context):
+        config.materialx_rpr_export = self.materialx_rpr_export
+        log.info(f"MaterialX RPR Export is {'enabled' if self.materialx_rpr_export else 'disabled'}")
+
     filename_ext = ""
     filepath: bpy.props.StringProperty(
         name="File Path",
@@ -395,6 +402,12 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
     is_pack_into_one_file: bpy.props.BoolProperty(name="Pack into one file",
                                                   description="Pack all references into one file",
                                                   default=True)
+    materialx_rpr_export: bpy.props.BoolProperty(
+        name="Materialx Rpr Export",
+        description="",
+        default=config.materialx_rpr_export,
+        update=update_materialx_rpr_export,
+    )
     export_format: bpy.props.EnumProperty(
         name="Format",
         items=(('.usda', "Text (.usda)",
@@ -440,6 +453,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
     def draw(self, context):
         self.layout.prop(self, 'is_pack_into_one_file')
         self.layout.prop(self, 'is_export_animation')
+        self.layout.prop(self, 'materialx_rpr_export')
 
         if self.is_export_animation:
             self.layout.prop(self, 'is_restrict_frames')
@@ -453,6 +467,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
 
     def execute(self, context):
         node_tree = context.space_data.edit_tree
+        node_tree.reset()
         output_node = node_tree.get_output_node()
 
         input_stage = output_node.cached_stage()
@@ -465,8 +480,9 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
             return {'CANCELLED'}
 
         self.check(context)
-
-        new_stage = Usd.Stage.CreateNew(str(get_temp_file(".usdc")))
+        # Ar.SetDefaultSearchPath(("",))
+        resolverCtx = Ar.GetResolver().GetCurrentContext()
+        new_stage = Usd.Stage.CreateNew(self.filepath, resolverCtx)
 
         root_layer = new_stage.GetRootLayer()
         sdf_layer = input_stage.Flatten(False) if self.is_pack_into_one_file else input_stage.GetRootLayer()
@@ -478,6 +494,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
 
         texture_dir_abs = dest_path_root_dir / "textures"
         texture_dir_rel = texture_dir_abs.relative_to(dest_path_root_dir)
+
         image_paths = set()
         index = 0
 
@@ -489,18 +506,96 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
 
             src_filepath = Path(src_filepath.path)
 
-            if not texture_dir_abs.is_dir():
-                Path(texture_dir_abs).mkdir(parents=True, exist_ok=True)
+            dest_filepath = dest_path_root_dir / src_filepath.name
+            if not src_filepath.name.endswith('mtlx'):
+                if not texture_dir_abs.is_dir():
+                    Path(texture_dir_abs).mkdir(parents=True, exist_ok=True)
 
-            dest_filepath = texture_dir_abs / src_filepath.name
-            if src_filepath not in image_paths:
+                dest_filepath = texture_dir_abs / src_filepath.name
+            if src_filepath not in image_paths and not src_filepath.name.endswith('mtlx'):
                 image_paths.update([src_filepath])
                 if dest_filepath.is_file():
                     index += 1
+
                     dest_filepath = texture_dir_abs / f"{src_filepath.stem}_{index}{src_filepath.suffix}"
+                    if not src_filepath.name.endswith('mtlx'):
+                        dest_filepath = dest_path_root_dir / f"{src_filepath.stem}_{index}{src_filepath.suffix}"
+
 
                 shutil.copy(str(src_filepath), str(dest_filepath))
-            tex_attr.Set(str(texture_dir_rel / dest_filepath.name))
+
+            if src_filepath.suffix == ".mtlx":
+                doc = mx.createDocument()
+                source_path = Path(src_filepath)
+                dest_path = f"{dest_path_root_dir}/{src_filepath.name}"
+                search_path = mx.FileSearchPath(str(source_path.parent))
+                search_path.append(str(mx_utils.MX_LIBS_DIR))
+                mx.readFromXmlFile(doc, str(source_path), searchPath=search_path)
+
+                mx_node_tree = next((mat.hdusd.mx_node_tree for mat in bpy.data.materials
+                                     if mat.hdusd.mx_node_tree
+                                     and source_path.stem.startswith(mat.name_full)
+                                     and mat.hdusd.mx_node_tree.name_full in source_path.stem), None)
+
+                if not mx_node_tree:
+                    material_name = max([mat.name_full for mat in bpy.data.materials
+                                         if source_path.stem.startswith(mat.name_full)], key=len)
+                    mat = bpy.data.materials.get(material_name, None)
+                    if not mat:
+                        return
+
+                    mx_node_tree = bpy.data.node_groups.new(f"MX_{mat.name}", type=MxNodeTree.bl_idname)
+
+                    mat.hdusd.mx_node_tree = mx_node_tree
+
+                    try:
+                        mx_node_tree.import_(doc, source_path)
+                    except Exception as e:
+                        # log.error(traceback.format_exc(), source_path)
+                        bpy.data.node_groups.remove(mx_node_tree)
+                        return
+
+                    # after mx_node_tree.import_ reference updated, so we need to change them back
+                    # since we convert material only to get mx_node_tree
+                    # layer.UpdateCompositionAssetDependency(
+                    #     f"./{mat.name}{mat.hdusd.mx_node_tree.name}.mtlx", src_filepath)
+
+                    mx_utils.export_mx_to_file(
+                        doc, dest_path,
+                        is_export_textures=True,
+                        is_export_deps=True,
+                        mx_node_tree=mx_node_tree,
+                        is_clean_texture_folder=False,
+                        is_clean_deps_folders=False)
+
+                    path_1 = str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith(
+                        'mtlx') else str(f"./{dest_filepath.name}")
+                    path = Sdf.AssetPath("./ams.mtlx", "./ams.mtlx")
+                    log(path_1)
+                    log(path)
+                    tex_attr.Set(path)
+                    # tex_attr.Set(str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith('mtlx') else str(f"./{dest_filepath.name}"))
+                    log(tex_attr.Get())
+
+                    bpy.data.node_groups.remove(mx_node_tree)
+                    return
+
+                mx_utils.export_mx_to_file(
+                    doc, dest_path,
+                    is_export_textures=True,
+                    is_export_deps=True,
+                    mx_node_tree=mx_node_tree,
+                    is_clean_texture_folder=False,
+                    is_clean_deps_folders=False)
+
+            path_1 = str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith('mtlx') else str(f"./{dest_filepath.name}")
+            path = Sdf.AssetPath("./ams.mtlx", "./ams.mtlx")
+            log(path_1)
+            log(path)
+            tex_attr.Set(path)
+            # tex_attr.Set(str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith('mtlx') else str(f"./{dest_filepath.name}"))
+            log(tex_attr.Get())
+
 
         for prim in new_stage.TraverseAll():
             # perform world texture paths to be relative
@@ -522,7 +617,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                     _resolve_texture_filepath(tex_attr)
                 continue
 
-            if self.is_pack_into_one_file:
+            if self.is_pack_into_one_file or self.materialx_rpr_export:
                 # perform all texture paths in MaterialX to be relative
                 if not prim.GetTypeName() == 'Shader':
                     continue
