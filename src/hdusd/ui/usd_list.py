@@ -451,9 +451,13 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
         return self.filepath != old_filepath
 
     def draw(self, context):
-        self.layout.prop(self, 'is_pack_into_one_file')
-        self.layout.prop(self, 'is_export_animation')
-        self.layout.prop(self, 'materialx_rpr_export')
+        col = self.layout.column()
+        row = col.row()
+        row.enabled = not self.materialx_rpr_export
+        row.prop(self, 'is_pack_into_one_file')
+
+        col.prop(self, 'is_export_animation')
+        col.prop(self, 'materialx_rpr_export')
 
         if self.is_export_animation:
             self.layout.prop(self, 'is_restrict_frames')
@@ -568,9 +572,9 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                         is_clean_texture_folder=False,
                         is_clean_deps_folders=False)
 
-                    path_1 = str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith(
+                    path_1 = f"./{str(texture_dir_rel / dest_filepath.name)}" if not src_filepath.name.endswith(
                         'mtlx') else str(f"./{dest_filepath.name}")
-                    path = Sdf.AssetPath("./ams.mtlx", "./ams.mtlx")
+                    path = Sdf.AssetPath(path_1, path_1)
                     log(path_1)
                     log(path)
                     tex_attr.Set(path)
@@ -588,8 +592,9 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                     is_clean_texture_folder=False,
                     is_clean_deps_folders=False)
 
-            path_1 = str(texture_dir_rel / dest_filepath.name) if not src_filepath.name.endswith('mtlx') else str(f"./{dest_filepath.name}")
-            path = Sdf.AssetPath("./ams.mtlx", "./ams.mtlx")
+            path_1 = f"./{str(texture_dir_rel / dest_filepath.name)}" if not src_filepath.name.endswith(
+                'mtlx') else str(f"./{dest_filepath.name}")
+            path = Sdf.AssetPath(path_1, path_1)
             log(path_1)
             log(path)
             tex_attr.Set(path)
@@ -633,7 +638,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
                                             start=self.frame_start,
                                             end=self.frame_end)
 
-        if self.is_pack_into_one_file:
+        if self.is_pack_into_one_file and not self.materialx_rpr_export:
             new_stage.Export(self.filepath, False)
             log.info(f"Export of '{node_tree.name}':'{output_node.name}' stage to {self.filepath}: completed successfuly")
             return {'FINISHED'}
@@ -645,7 +650,7 @@ class HDUSD_NODE_OP_export_usd_file(HdUSD_Operator, ExportHelper):
             for ref in layer.GetCompositionAssetDependencies():
                 ref_path = Path(ref)
                 ref_name = ref_path.name
-                if ref_path.suffix == ".mtlx":
+                if ref_path.suffix == ".mtlx" and not self.materialx_rpr_export:
                     doc = mx.createDocument()
                     source_path = Path(f"{new_stage.GetPathResolverContext().Get()[0].GetSearchPath()[0]}/{ref}")
                     dest_path = f"{dest_path_root_dir}/{ref_name}"
