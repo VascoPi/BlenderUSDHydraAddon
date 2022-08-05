@@ -356,6 +356,7 @@ def main():
 
     files = [
         ('PBR', "PBR", mx_libs_dir / "bxdf/standard_surface.mtlx"),
+        ('PBR', "PBR", mx_libs_dir / "bxdf/gltf_pbr.mtlx"),
         ('USD', "USD", mx_libs_dir / "bxdf/usd_preview_surface.mtlx"),
         ('STD', None, mx_libs_dir / "stdlib/stdlib_defs.mtlx"),
         ('PBR', "PBR", mx_libs_dir / "pbrlib/pbrlib_defs.mtlx"),

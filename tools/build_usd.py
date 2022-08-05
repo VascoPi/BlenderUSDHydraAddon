@@ -41,18 +41,16 @@ in USD repository.
     os.chdir(str(usd_dir))
 
     try:
-        # applying patch data/USD_MaterialX.patch
-        # Temporary implements https://github.com/PixarAnimationStudios/USD/pull/1610
-        # TODO: remove this after up USD to >= 2203 and implement their own fix
-        #  https://github.com/PixarAnimationStudios/USD/commit/adfc04eea92b91965b0da68503539b079a5d30d9
-        check_call('git', 'apply', '--whitespace=nowarn', str(repo_dir / "tools/data/USD_MaterialX.patch"))
-
         # applying patch data/USD_deps.patch
         # fixes issues with building USD on python 3.10
         check_call('git', 'apply', str(repo_dir / "tools/data/USD_deps.patch"))
 
         # modifying pxr/usdImaging/CMakeLists.txt
         usd_imaging_lite_path = repo_dir / "deps/UsdImagingLite/pxr/usdImaging/usdImagingLite"
+        os.chdir(str(usd_imaging_lite_path))
+        check_call('git', 'apply', str(repo_dir / "tools/data/UsdImagineLite.patch"))
+
+        os.chdir(str(usd_dir))
 
         usd_imaging_cmake = usd_dir / "pxr/usdImaging/CMakeLists.txt"
         print("Modifying:", usd_imaging_cmake)
