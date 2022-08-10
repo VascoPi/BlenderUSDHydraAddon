@@ -241,14 +241,14 @@ def sync(obj_prim, obj: bpy.types.Object, mesh: bpy.types.Mesh = None, **kwargs)
     
         scene.frame_set(frame_current)
 
-    for name, uv_layer in data.uv_layers.items():
-        uv_primvar = usd_mesh.CreatePrimvar("st",   # default name, later we'll use sdf_path(name)
-                                            Sdf.ValueTypeNames.TexCoord2fArray,
-                                            UsdGeom.Tokens.faceVarying)
-        uv_primvar.Set(uv_layer[0])
-        uv_primvar.SetIndices(Vt.IntArray.FromNumpy(uv_layer[1]))
-
-        break   # currently we use only first UV layer
+    # for name, uv_layer in data.uv_layers.items():
+    #     uv_primvar = usd_mesh.CreatePrimvar("st",   # default name, later we'll use sdf_path(name)
+    #                                         Sdf.ValueTypeNames.TexCoord2fArray,
+    #                                         UsdGeom.Tokens.faceVarying)
+    #     uv_primvar.Set(uv_layer[0])
+    #     uv_primvar.SetIndices(Vt.IntArray.FromNumpy(uv_layer[1]))
+    #
+    #     break   # currently we use only first UV layer
 
     _assign_materials(obj_prim, obj.original, usd_mesh)
 

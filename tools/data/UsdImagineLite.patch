@@ -1,0 +1,47 @@
+Index: pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp b/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp
+--- a/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(revision 9564a431ef640da9c3679a410a7ddc12ad221bbc)
++++ b/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(date 1659681455258)
+@@ -54,7 +54,7 @@
+ GfMatrix4d HdRenderDataDelegate::GetTransform(SdfPath const& id)
+ {
+     // We expect this to be called only for the free cam.
+-    VtValue val = GetCameraParamValue(id, HdCameraTokens->worldToViewMatrix);
++    VtValue val = GetCameraParamValue(id, HdTokens->transform);
+     GfMatrix4d xform(1.0);
+     if (val.IsHolding<GfMatrix4d>()) {
+         xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
+@@ -69,8 +69,8 @@
+ 
+ VtValue HdRenderDataDelegate::GetCameraParamValue(SdfPath const& id, TfToken const& key)
+ {
+-    if (key == HdCameraTokens->worldToViewMatrix ||
+-        key == HdCameraTokens->projectionMatrix ||
++    if (key == HdTokens->transform ||
++        key == HdCameraTokens->projection ||
+         key == HdCameraTokens->clipPlanes ||
+         key == HdCameraTokens->windowPolicy) {
+ 
+Index: pxr/usdImaging/usdImagingLite/engine.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pxr/usdImaging/usdImagingLite/engine.cpp b/pxr/usdImaging/usdImagingLite/engine.cpp
+--- a/pxr/usdImaging/usdImagingLite/engine.cpp	(revision 9564a431ef640da9c3679a410a7ddc12ad221bbc)
++++ b/pxr/usdImaging/usdImagingLite/engine.cpp	(date 1659629127125)
+@@ -197,8 +197,8 @@
+     }
+     _renderIndex->InsertSprim(HdPrimTypeTokens->camera, _renderDataDelegate.get(), freeCameraId);
+     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
+-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->worldToViewMatrix, VtValue(viewMatrix));
+-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
++    _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(viewMatrix));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(projectionMatrix));
+     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(std::vector<GfVec4d>()));
+ 
+     _renderTaskParams.camera = freeCameraId;
