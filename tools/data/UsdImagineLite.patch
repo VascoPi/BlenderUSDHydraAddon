@@ -4,8 +4,8 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h
---- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(revision 8621b4993eb884d8a2306ab963263d725c20afb2)
-+++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(date 1660315714705)
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(revision 15293d5b76e20ffdfef34842c87fb8dffa596171)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(date 1660315978161)
 @@ -33,6 +33,7 @@
  #include "pxr/imaging/hdx/taskController.h"
  #include "pxr/usdImaging/usdImaging/delegate.h"
@@ -33,8 +33,8 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp
---- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(revision 8621b4993eb884d8a2306ab963263d725c20afb2)
-+++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(date 1660315714705)
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(revision 15293d5b76e20ffdfef34842c87fb8dffa596171)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(date 1660315978161)
 @@ -46,40 +46,19 @@
      if (vcache && TfMapLookup(*vcache, key, &ret)) {
          return ret;
@@ -85,8 +85,8 @@ Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
 <+>UTF-8
 ===================================================================
 diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp
---- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(revision 8621b4993eb884d8a2306ab963263d725c20afb2)
-+++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(date 1660315803239)
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(revision 15293d5b76e20ffdfef34842c87fb8dffa596171)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(date 1660316099891)
 @@ -187,7 +187,7 @@
      _renderTaskParams.viewport = viewport;
  }
@@ -96,15 +96,15 @@ diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp b/deps
  {
      TF_VERIFY(_renderIndex);
  
-@@ -196,10 +196,17 @@
+@@ -196,10 +196,18 @@
          _renderIndex->RemoveSprim(HdPrimTypeTokens->camera, freeCameraId);
      }
      _renderIndex->InsertSprim(HdPrimTypeTokens->camera, _renderDataDelegate.get(), freeCameraId);
--    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
++    _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(cam.GetTransform()));
+     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
 -    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->worldToViewMatrix, VtValue(viewMatrix));
 -    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projectionMatrix, VtValue(projectionMatrix));
 -    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(std::vector<GfVec4d>()));
-+    _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(cam.GetTransform()));
 +    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(cam.GetProjection()));
 +    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clippingRange, VtValue(cam.GetClippingRange()));
 +    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalAperture, VtValue(cam.GetHorizontalAperture()));
@@ -118,7 +118,7 @@ diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp b/deps
  
      _renderTaskParams.camera = freeCameraId;
   }
-@@ -261,7 +268,7 @@
+@@ -261,7 +269,7 @@
          SdfPath::AbsoluteRootPath().AppendElementString("usdImagingDelegate"));
  
      _renderDataDelegate = std::make_unique<HdRenderDataDelegate>(_renderIndex.get(),
