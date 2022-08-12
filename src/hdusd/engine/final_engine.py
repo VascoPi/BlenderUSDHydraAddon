@@ -72,7 +72,7 @@ class FinalEngine(Engine):
             return
 
         # setting camera
-        self._set_scene_camera(renderer, scene)
+        self._set_scene_camera_gl(renderer, scene)
 
         renderer.SetRenderViewport((0, 0, self.width, self.height))
         renderer.SetRendererAov('color')
@@ -158,6 +158,15 @@ class FinalEngine(Engine):
         renderer = None
 
     def _set_scene_camera(self, renderer, scene):
+        if scene.hdusd.final.nodetree_camera != '' and scene.hdusd.final.data_source:
+            usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, scene.hdusd.final.nodetree_camera)
+        else:
+            usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, Tf.MakeValidIdentifier(scene.camera.data.name))
+
+        gf_camera = usd_camera.GetCamera(scene.frame_current)
+        renderer.SetCameraState(gf_camera)
+
+    def _set_scene_camera_gl(self, renderer, scene):
         if scene.hdusd.final.nodetree_camera != '' and scene.hdusd.final.data_source:
             usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, scene.hdusd.final.nodetree_camera)
         else:
