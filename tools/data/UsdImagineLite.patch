@@ -1,0 +1,128 @@
+Index: deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(revision bc573b48cc1e56d3b5782021edfb8d1116100ec6)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.h	(date 1660308881896)
+@@ -33,6 +33,7 @@
+ #include "pxr/imaging/hdx/taskController.h"
+ #include "pxr/usdImaging/usdImaging/delegate.h"
+ #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
++#include "pxr/base/gf/camera.h"
+ 
+ #include "api.h"
+ #include "renderParams.h"
+@@ -115,10 +116,9 @@
+ 
+     /// Free camera API
+     /// Set camera framing state directly (without pointing to a camera on the 
+-    /// USD stage). The projection matrix is expected to be pre-adjusted for the
+-    /// window policy.
++    /// USD stage).
+     USDIMAGINGLITE_API
+-    void SetCameraState(const GfMatrix4d& viewMatrix, const GfMatrix4d& projectionMatrix);
++    void SetCameraState(const GfCamera& cam);
+ 
+     /// @}
+ 
+Index: deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(revision bc573b48cc1e56d3b5782021edfb8d1116100ec6)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/renderDataDelegate.cpp	(date 1660308717880)
+@@ -46,40 +46,18 @@
+     if (vcache && TfMapLookup(*vcache, key, &ret)) {
+         return ret;
+     }
+-    TF_CODING_ERROR("%s:%s doesn't exist in the value cache\n",
+-        id.GetText(), key.GetText());
+     return VtValue();
+ }
+ 
+ GfMatrix4d HdRenderDataDelegate::GetTransform(SdfPath const& id)
+ {
+-    // We expect this to be called only for the free cam.
+     VtValue val = GetCameraParamValue(id, HdTokens->transform);
+-    GfMatrix4d xform(1.0);
+-    if (val.IsHolding<GfMatrix4d>()) {
+-        xform = val.Get<GfMatrix4d>().GetInverse(); // camera to world
+-    }
+-    else {
+-        TF_CODING_ERROR(
+-            "Unexpected call to GetTransform for %s in HdxTaskController's "
+-            "internal scene delegate.\n", id.GetText());
+-    }
+-    return xform;
++    return val.Get<GfMatrix4d>();
+ }
+ 
+ VtValue HdRenderDataDelegate::GetCameraParamValue(SdfPath const& id, TfToken const& key)
+ {
+-    if (key == HdTokens->transform ||
+-        key == HdCameraTokens->projection ||
+-        key == HdCameraTokens->clipPlanes ||
+-        key == HdCameraTokens->windowPolicy) {
+-
+-        return Get(id, key);
+-    }
+-    else {
+-        // XXX: For now, skip handling physical params on the free cam.
+-        return VtValue();
+-    }
++    return Get(id, key);
+ }
+ 
+ VtValue HdRenderDataDelegate::GetLightParamValue(SdfPath const& id, TfToken const& paramName)
+Index: deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp
+--- a/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(revision bc573b48cc1e56d3b5782021edfb8d1116100ec6)
++++ b/deps/UsdImagingLite/pxr/usdImaging/usdImagingLite/engine.cpp	(date 1660308716680)
+@@ -187,7 +187,7 @@
+     _renderTaskParams.viewport = viewport;
+ }
+ 
+-void UsdImagingLiteEngine::SetCameraState(const GfMatrix4d & viewMatrix, const GfMatrix4d & projectionMatrix)
++void UsdImagingLiteEngine::SetCameraState(const GfCamera& cam)
+ {
+     TF_VERIFY(_renderIndex);
+ 
+@@ -196,10 +196,18 @@
+         _renderIndex->RemoveSprim(HdPrimTypeTokens->camera, freeCameraId);
+     }
+     _renderIndex->InsertSprim(HdPrimTypeTokens->camera, _renderDataDelegate.get(), freeCameraId);
++    _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(cam.GetTransform()));
+     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
+-    _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(viewMatrix));
+-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(projectionMatrix));
+-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(std::vector<GfVec4d>()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(cam.GetProjection()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clippingRange, VtValue(cam.GetClippingRange()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalAperture, VtValue(cam.GetHorizontalAperture()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->verticalAperture, VtValue(cam.GetVerticalAperture()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalApertureOffset, VtValue(cam.GetHorizontalApertureOffset()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->verticalApertureOffset, VtValue(cam.GetVerticalApertureOffset()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->focalLength, VtValue(cam.GetFocalLength()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(cam.GetClippingPlanes()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->fStop, VtValue(cam.GetFStop()));
++    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->focusDistance, VtValue(cam.GetFocusDistance()));
+ 
+     _renderTaskParams.camera = freeCameraId;
+  }
+@@ -261,7 +269,7 @@
+         SdfPath::AbsoluteRootPath().AppendElementString("usdImagingDelegate"));
+ 
+     _renderDataDelegate = std::make_unique<HdRenderDataDelegate>(_renderIndex.get(),
+-        SdfPath::AbsoluteRootPath().AppendElementString("taskDataDelegate"));
++        SdfPath::AbsoluteRootPath().AppendElementString("renderDataDelegate"));
+ 
+     // The task context holds on to resources in the render
+     // deletegate, so we want to destroy it first and thus
