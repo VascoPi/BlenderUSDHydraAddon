@@ -47,10 +47,6 @@ in USD repository.
 
         # modifying pxr/usdImaging/CMakeLists.txt
         usd_imaging_lite_path = repo_dir / "deps/UsdImagingLite/pxr/usdImaging/usdImagingLite"
-        os.chdir(str(usd_imaging_lite_path))
-        check_call('git', 'apply', str(repo_dir / "tools/data/UsdImagineLite.patch"))
-
-        os.chdir(str(usd_dir))
 
         usd_imaging_cmake = usd_dir / "pxr/usdImaging/CMakeLists.txt"
         print("Modifying:", usd_imaging_cmake)
