@@ -70,16 +70,11 @@ class NodeItem:
 
         val_data = value.data if isinstance(value, NodeItem) else value
         nd_input = self.nodedef.getActiveInput(name)
-        if not nd_input:
-            return
-
         input = self.data.addInput(name, nd_input.getType())
         mx_utils.set_param_value(input, val_data, input.getType())
 
     def set_inputs(self, inputs):
         for name, value in inputs.items():
-            if not value:
-                continue
             self.set_input(name, value)
 
     # MATH OPERATIONS
