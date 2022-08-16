@@ -72,12 +72,6 @@ class PreviewEngine(Engine):
         cls.timer = threading.Timer(cls.RENDERER_LIFETIME, cls._remove_renderer)
         cls.timer.start()
 
-    def _set_scene_camera(self, renderer, scene):
-        usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, Tf.MakeValidIdentifier(scene.camera.data.name))
-        gf_camera = usd_camera.GetCamera()
-        renderer.SetCameraState(gf_camera.frustum.ComputeViewMatrix(),
-                                gf_camera.frustum.ComputeProjectionMatrix())
-
     def sync(self, depsgraph):
         self.is_synced = False
 
@@ -125,8 +119,8 @@ class PreviewEngine(Engine):
         # setting camera
         usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, Tf.MakeValidIdentifier(scene.camera.data.name))
 
-        gf_camera = usd_camera.GetCamera()
-        self.renderer.SetCameraState(gf_camera.frustum.ComputeViewMatrix(), gf_camera.frustum.ComputeProjectionMatrix())
+        gf_camera = usd_camera.GetCamera(scene.frame_current)
+        self.renderer.SetCameraState(gf_camera)
 
         params = UsdImagingLite.RenderParams()
         image = np.zeros((width, height, 4), dtype=np.float32)
