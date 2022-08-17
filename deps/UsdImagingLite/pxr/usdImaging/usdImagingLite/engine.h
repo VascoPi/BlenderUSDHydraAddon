@@ -205,8 +205,6 @@ private:
     bool _isPopulated;
     HdRprimCollection _renderCollection;
 
-    static HdCamera::Projection _ToHd(const GfCamera::Projection projection);
-
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
     void _DeleteHydraResources();
