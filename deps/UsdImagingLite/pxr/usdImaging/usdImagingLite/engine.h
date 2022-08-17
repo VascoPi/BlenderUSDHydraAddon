@@ -127,8 +127,6 @@ public:
     /// @{
     // ---------------------------------------------------------------------
 
-    static HdCamera::Projection _ToHd(const GfCamera::Projection projection)
-
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGLITE_API
     static TfTokenVector GetRendererPlugins();
@@ -206,6 +204,8 @@ private:
 
     bool _isPopulated;
     HdRprimCollection _renderCollection;
+
+    static HdCamera::Projection _ToHd(const GfCamera::Projection projection);
 
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
