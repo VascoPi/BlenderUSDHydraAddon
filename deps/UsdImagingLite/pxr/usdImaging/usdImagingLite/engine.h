@@ -34,6 +34,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImagingGL/rendererSettings.h"
 #include "pxr/base/gf/camera.h"
+#include "pxr/imaging/hd/camera.h"
 
 #include "api.h"
 #include "renderParams.h"
@@ -208,7 +209,7 @@ private:
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
     void _DeleteHydraResources();
-
+    HdCamera::Projection _ToHd(const GfCamera::Projection projection);
     SdfPath _GetRendererAovPath(TfToken const &aov) const;
 };
 
