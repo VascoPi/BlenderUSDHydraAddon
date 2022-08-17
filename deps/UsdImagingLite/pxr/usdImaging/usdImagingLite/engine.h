@@ -127,6 +127,8 @@ public:
     /// @{
     // ---------------------------------------------------------------------
 
+    static HdCamera::Projection _ToHd(const GfCamera::Projection projection)
+
     /// Return the vector of available render-graph delegate plugins.
     USDIMAGINGLITE_API
     static TfTokenVector GetRendererPlugins();
