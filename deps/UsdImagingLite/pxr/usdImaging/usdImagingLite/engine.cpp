@@ -198,14 +198,19 @@ void UsdImagingLiteEngine::SetCameraState(const GfCamera& cam)
     _renderIndex->InsertSprim(HdPrimTypeTokens->camera, _renderDataDelegate.get(), freeCameraId);
     _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(cam.GetTransform()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(_ToHd(cam.GetProjection())));
+
+    HdCamera::Projection projection = (cam.GetProjection() == GfCamera::Orthographic) ? HdCamera::Orthographic : HdCamera::Perspective
+    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(projection));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clippingRange, VtValue(cam.GetClippingRange()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalAperture, VtValue(cam.GetHorizontalAperture()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->verticalAperture, VtValue(cam.GetVerticalAperture()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalApertureOffset, VtValue(cam.GetHorizontalApertureOffset()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->verticalApertureOffset, VtValue(cam.GetVerticalApertureOffset()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->focalLength, VtValue(cam.GetFocalLength()));
-    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(cam.GetClippingPlanes()));
+
+    const std::vector<GfVec4f> &clipPlanes = cam.GetClippingPlanes();
+    const std::vector<GfVec4d> planes(clipPlanes.begin(), clipPlanes.end());
+    _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clipPlanes, VtValue(planes));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->fStop, VtValue(cam.GetFStop()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->focusDistance, VtValue(cam.GetFocusDistance()));
 
@@ -222,18 +227,6 @@ TfTokenVector UsdImagingLiteEngine::GetRendererPlugins()
         pluginsIds.push_back(descr.id);
     }
     return pluginsIds;
-}
-
-HdCamera::Projection UsdImagingLiteEngine::_ToHd(const GfCamera::Projection projection)
-{
-    switch(projection) {
-    case GfCamera::Perspective:
-        return HdCamera::Perspective;
-    case GfCamera::Orthographic:
-        return HdCamera::Orthographic;
-    }
-    TF_CODING_ERROR("Bad GfCamera::Projection value");
-    return HdCamera::Perspective;
 }
 
 std::string UsdImagingLiteEngine::GetRendererDisplayName(TfToken const & id)

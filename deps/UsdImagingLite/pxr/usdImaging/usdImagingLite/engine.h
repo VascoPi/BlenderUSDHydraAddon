@@ -209,7 +209,6 @@ private:
     // This function disposes of: the render index, the render plugin,
     // the task controller, and the usd imaging delegate.
     void _DeleteHydraResources();
-    HdCamera::Projection _ToHd(const GfCamera::Projection projection);
     SdfPath _GetRendererAovPath(TfToken const &aov) const;
 };
 
