@@ -199,7 +199,8 @@ void UsdImagingLiteEngine::SetCameraState(const GfCamera& cam)
     _renderDataDelegate->SetParameter(freeCameraId, HdTokens->transform, VtValue(cam.GetTransform()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->windowPolicy, VtValue(CameraUtilFit));
 
-    HdCamera::Projection projection = (cam.GetProjection() == GfCamera::Orthographic) ? HdCamera::Orthographic : HdCamera::Perspective
+    GfCamera::Projection in_projection = cam.GetProjection();
+    HdCamera::Projection projection = (in_projection == GfCamera::Orthographic) ? HdCamera::Orthographic : HdCamera::Perspective;
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->projection, VtValue(projection));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->clippingRange, VtValue(cam.GetClippingRange()));
     _renderDataDelegate->SetParameter(freeCameraId, HdCameraTokens->horizontalAperture, VtValue(cam.GetHorizontalAperture()));
