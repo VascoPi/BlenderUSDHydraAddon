@@ -119,7 +119,7 @@ class PreviewEngine(Engine):
         # setting camera
         usd_camera = UsdAppUtils.GetCameraAtPath(self.stage, Tf.MakeValidIdentifier(scene.camera.data.name))
 
-        gf_camera = usd_camera.GetCamera(scene.frame_current)
+        gf_camera = usd_camera.GetCamera()
         self.renderer.SetCameraState(gf_camera)
 
         params = UsdImagingLite.RenderParams()
