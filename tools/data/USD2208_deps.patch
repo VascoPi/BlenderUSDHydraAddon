@@ -1,0 +1,92 @@
+Index: cmake/defaults/msvcdefaults.cmake
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake/defaults/msvcdefaults.cmake b/cmake/defaults/msvcdefaults.cmake
+--- a/cmake/defaults/msvcdefaults.cmake	(revision 3abc46452b1271df7650e9948fef9f0ce602e3b2)
++++ b/cmake/defaults/msvcdefaults.cmake	(date 1662043276069)
+@@ -120,9 +120,6 @@
+ # for all translation units.
+ set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /bigobj")
+ 
+-# Enable PDB generation.
+-set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Zi")
+-
+ # Enable multiprocessor builds.
+ set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /MP")
+ set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} /Gm-")
+Index: build_scripts/build_usd.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/build_scripts/build_usd.py b/build_scripts/build_usd.py
+--- a/build_scripts/build_usd.py	(revision 3abc46452b1271df7650e9948fef9f0ce602e3b2)
++++ b/build_scripts/build_usd.py	(date 1662043276062)
+@@ -694,8 +694,8 @@
+     #
+     # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
+     # this version for all older Visual Studio versions as well.
+-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+-    BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
++    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
++    BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
+ 
+ def InstallBoost_Helper(context, force, buildArgs):
+     # Documentation files in the boost archive can have exceptionally
+@@ -851,8 +851,8 @@
+ # Intel TBB
+ 
+ if Windows():
+-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
+-    TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
++    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/v2020.3/tbb-2020.3-win.zip"
++    TBB_ROOT_DIR_NAME = "tbb"
+ elif MacOS() and not Arm():
+     # On MacOS Intel systems we experience various crashes in tests during
+     # teardown starting with 2018 Update 2. Until we figure that out, we use
+@@ -1102,7 +1102,7 @@
+ ############################################################
+ # OpenVDB
+ 
+-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
++OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.0.0.zip"
+ 
+ def InstallOpenVDB(context, force, buildArgs):
+     with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
+Index: pxr/imaging/hioOpenVDB/vdbTextureData.cpp
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/pxr/imaging/hioOpenVDB/vdbTextureData.cpp b/pxr/imaging/hioOpenVDB/vdbTextureData.cpp
+--- a/pxr/imaging/hioOpenVDB/vdbTextureData.cpp	(revision 3abc46452b1271df7650e9948fef9f0ce602e3b2)
++++ b/pxr/imaging/hioOpenVDB/vdbTextureData.cpp	(date 1662043276108)
+@@ -22,6 +22,9 @@
+ // language governing permissions and limitations under the Apache License.
+ //
+ 
++#define _USE_MATH_DEFINES
++#include <math.h>
++
+ #include "pxr/imaging/hioOpenVDB/vdbTextureData.h"
+ #include "pxr/imaging/hioOpenVDB/debugCodes.h"
+ #include "pxr/imaging/hioOpenVDB/utils.h"
+Index: cmake/defaults/Packages.cmake
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/cmake/defaults/Packages.cmake b/cmake/defaults/Packages.cmake
+--- a/cmake/defaults/Packages.cmake	(revision 3abc46452b1271df7650e9948fef9f0ce602e3b2)
++++ b/cmake/defaults/Packages.cmake	(date 1662043276076)
+@@ -132,7 +132,7 @@
+ endif()
+ 
+ # --TBB
+-find_package(TBB REQUIRED COMPONENTS tbb)
++find_package(TBB)
+ add_definitions(${TBB_DEFINITIONS})
+ 
+ # --math

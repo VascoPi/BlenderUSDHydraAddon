@@ -43,7 +43,7 @@ in USD repository.
     try:
         # applying patch data/USD_deps.patch
         # fixes issues with building USD on python 3.10
-        check_call('git', 'apply', str(repo_dir / "tools/data/USD_deps.patch"))
+        check_call('git', 'apply', str(repo_dir / "tools/data/USD2208_deps.patch"))
 
         # modifying pxr/usdImaging/CMakeLists.txt
         usd_imaging_lite_path = repo_dir / "deps/UsdImagingLite/pxr/usdImaging/usdImagingLite"
