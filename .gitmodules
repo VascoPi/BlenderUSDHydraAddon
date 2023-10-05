@@ -7,6 +7,3 @@
 [submodule "deps/USD"]
 	path = deps/USD
 	url = https://github.com/PixarAnimationStudios/USD
-[submodule "deps/RenderStudioKit"]
-	path = deps/RenderStudioKit
-	url = https://github.com/Radeon-Pro/RenderStudioKit.git
