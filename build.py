@@ -305,6 +305,7 @@ def usd(bl_libs_dir, bin_dir, compiler, jobs, clean, build_var, git_apply):
 
 
 def boost(bin_dir, clean, build_var):
+    import syscd 
     repo_dir = Path(__file__).parent
     print(repo_dir)
 
