@@ -1,13 +1,26 @@
-import bpy
+# **********************************************************************
+# Copyright 2023 Advanced Micro Devices, Inc
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ********************************************************************
 import uuid
-from pxr import Usd, UsdGeom
-from threading import Thread
+import bpy
 import mathutils
+from threading import Thread
+from pxr import Usd, UsdGeom
 from . import logging
 from RenderStudioResolver import RenderStudioResolver, LiveModeInfo
 
 log = logging.Log("operators")
-
 stage_cache = Usd.StageCache()
 
 
@@ -20,13 +33,10 @@ class RESOLVER_object_properties(bpy.types.PropertyGroup):
 
 
 class RESOLVER_collection_properties(bpy.types.PropertyGroup):
-    liveUrl: bpy.props.EnumProperty(
+    liveUrl: bpy.props.StringProperty(
         name="Live Url",
-        items=(
-            ('wss://localhost:10000', "Local", "Local", 0),
-            ('wss://renderstudio.luxoft.com/livecpp/', "Remote", "Remote", 1),
-        ),
-        default=0,
+        description="",
+        default='',
     )
     storageUrl: bpy.props.StringProperty(
         name="Storage Url",
@@ -53,30 +63,25 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
         description="",
         default=-1,
         )
-    prim_name: bpy.props.StringProperty(
-        name='Prim Name',
-        description='',
-        default="Object/Sphere"
-        )
     usd_path: bpy.props.StringProperty(
         subtype='FILE_PATH',
         name='USD Stage',
         description='',
-        default=r"C:\Users\Vasyl_Pidhirskyi\Documents\AMD RenderStudio Home\Plane.usda"
+        default=""
         )
     is_live_mode: bpy.props.BoolProperty(
         name='Is Live Mode',
-        description='',
+        description="",
         default=False
         )
     is_live_update: bpy.props.BoolProperty(
         name='Is Live Update',
-        description='',
+        description="",
         default=False
         )
     is_depsgraph_update: bpy.props.BoolProperty(
         name='',
-        description='',
+        description="",
         default=True
         )
 
@@ -131,26 +136,9 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
             log.debug("Process Stop Live Updates")
             self.is_live_update = False
 
-    def sync(self):
-        # sleep(3)
-        RenderStudioResolver.ProcessLiveUpdates()
-        stage = self.get_stage()
-        log.debug(stage.ExportToString())
-        self.is_depsgraph_update = False
-        stage = self.get_stage()
-        for prim in stage.GetPseudoRoot().GetAllChildren():
-            xform = UsdGeom.Xform(prim)
-            transform = get_xform_transform(xform)
-            obj = bpy.context.collection.objects.get(prim.GetName())
-            if obj:
-                obj.matrix_local = transform
-
-        self.is_depsgraph_update = True
-
     def _sync(self):
         while (self.is_live_update and self.is_live_mode):
             if RenderStudioResolver.ProcessLiveUpdates():
-                log.debug("Resolver Updates")
                 self.is_depsgraph_update = False
                 stage = self.get_stage()
                 for prim in stage.GetPseudoRoot().GetAllChildren():
@@ -159,6 +147,7 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
                     obj = bpy.context.collection.objects.get(prim.GetName())
                     if obj:
                         obj.matrix_local = transform
+                        log.debug("Updated: ", obj)
 
             self.is_depsgraph_update = True
 
@@ -205,24 +194,9 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
             obj = objects.get(name)
             if obj:
                 obj.resolver.sdf_path = str(prim.GetPrimPath())
-                log.debug("Connect: ", obj, "<->", prim)
+                log.debug("Link: ", obj, "<->", prim)
 
         self.is_depsgraph_update = True
-
-
-    # @classmethod
-    # def register(cls):
-    #     log.debug("Register", cls)
-    #     bpy.types.collection.resolver = bpy.types.PointerProperty(
-    #         name="RenderStudioResolverSettings",
-    #         description="RenderStudioResolver settings",
-    #         type=cls,
-    #     )
-    #
-    # @classmethod
-    # def unregister(cls):
-    #     log.debug("Unregister", cls)
-    #     del bpy.types.collection.resolver
 
 
 def get_xform_transform(xform):
