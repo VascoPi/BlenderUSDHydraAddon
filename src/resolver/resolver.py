@@ -32,6 +32,9 @@ def on_depsgraph_update_post(scene, depsgraph):
         if isinstance(update.id, bpy.types.Object):
             obj = update.id
             stage = bpy.context.collection.resolver.get_stage()
+            if not obj.resolver.sdf_path:
+                return
+
             prim = stage.GetPrimAtPath(obj.resolver.sdf_path)
             if not prim:
                 return
