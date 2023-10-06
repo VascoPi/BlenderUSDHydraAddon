@@ -46,41 +46,36 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
     channelId: bpy.props.EnumProperty(
         name="Channel Id",
         items=(
-            ('Blender', "Blender", "Blender", 0),
-            ('Maya', "Maya", "Maya", 1),
-            ('RenderStudio', "RenderStudio", "RenderStudio", 2),
+            ('BLENDER', "Blender", "Blender", 0),
+            ('MAYA', "Maya", "Maya", 1),
+            ('RENDERSTUDIO', "RenderStudio", "RenderStudio", 2),
             ),
         default=0,
         )
     userId: bpy.props.StringProperty(
         name="User Id",
-        description="",
         default='BlenderUser',
         )
 
     stageId: bpy.props.IntProperty(
         name="Stage Id",
-        description="",
         default=-1,
         )
     usd_path: bpy.props.StringProperty(
         subtype='FILE_PATH',
-        name='USD Stage',
-        description='',
+        name="USD Stage",
         default=""
         )
     is_live_mode: bpy.props.BoolProperty(
-        name='Is Live Mode',
-        description="",
+        name="Is Live Mode",
         default=False
         )
     is_live_update: bpy.props.BoolProperty(
-        name='Is Live Update',
-        description="",
+        name="Is Live Update",
         default=False
         )
     is_depsgraph_update: bpy.props.BoolProperty(
-        name='',
+        name="Is Depsgraph Update",
         description="",
         default=True
         )
@@ -115,14 +110,13 @@ class RESOLVER_collection_properties(bpy.types.PropertyGroup):
         else:
             log.debug("Failed Start Live Mode: ")
 
-
     def stop_live_mode(self):
         if self.is_live_mode:
             RenderStudioResolver.StopLiveMode()
             self.is_live_mode = False
             self.is_live_update = False
 
-        log.debug(" Stop Live Mode")
+        log.debug("Stop Live Mode")
 
     def process_live_updates(self):
         log.debug(self.is_live_mode, self.is_live_update)
