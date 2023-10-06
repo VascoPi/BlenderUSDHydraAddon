@@ -21,6 +21,9 @@ import zipfile
 import zlib
 import os
 import sys
+import sysconfig
+from urllib.request import urlopen
+
 
 OS = platform.system()
 POSTFIX = ""
@@ -305,37 +308,53 @@ def usd(bl_libs_dir, bin_dir, compiler, jobs, clean, build_var, git_apply):
         os.chdir(cur_dir)
 
 
-def boost(bin_dir, clean, build_var):
-    repo_dir = Path(__file__).parent
-    print(repo_dir)
+def boost(bin_dir, clean):
+    print_start("Building Boost")
 
     boost_dir = bin_dir / "boost"
+    install_dir = boost_dir / "install"
+    build_dir = boost_dir / "build"
+
     if clean:
         rm_dir(boost_dir)
 
     cur_dir = os.getcwd()
-    os.chdir(str(repo_dir))
+    os.chdir(str(deps_dir / "Boost"))
+
+    # python-config.jam is required for boost::python
+    project_path = 'python-config.jam'
+    with open(project_path, 'w') as project_file:
+        lines = [
+            f'using python : {sysconfig.get_config_var("py_version_short")}',
+            f'  : "{Path(sys.executable).as_posix()}"',
+            f'  : "{Path(sysconfig.get_path("include")).as_posix()}"',
+            f'  : "{(Path(sysconfig.get_config_var("base")) / "libs").as_posix()}"',
+            '  ;\n'
+        ]
+        project_file.write("\n".join(lines))
+
+    b2_args = [
+        "b2",
+        f"--prefix={install_dir}",
+        f"--build-dir={build_dir}",
+        "address-model=64",
+        "link=shared",
+        "runtime-link=shared",
+        "threading=multi",
+        "variant=release",
+        "--with-log",
+        "--with-python",
+        f"--user-config={project_path}",
+        "-sNO_BZIP2=1",
+        "toolset=msvc-14.2",
+        "install"
+    ]
 
     try:
-        call_args = (sys.executable, str(repo_dir / "tools" / "build_boost.py"),
-                     '--verbose',
-                     '--build', str(boost_dir / "build"),
-                     '--src', str(boost_dir / "deps"),
-                     '--python',
-                     '--build-variant', build_var,
-                     str(boost_dir / "install"),
-                     )
-
-        try:
-            check_call(*call_args)
-
-        finally:
-            pass
-            # print("Reverting Boost repo")
-            # check_call('git', 'checkout', '--', '*')
-            # check_call('git', 'clean', '-f')
-
+        check_call("bootstrap.bat", f'--prefix="{install_dir}"')
+        check_call(*b2_args)
     finally:
+        check_call('git', 'checkout', '--', '*')
         os.chdir(cur_dir)
 
 
@@ -536,7 +555,7 @@ def resolver(bl_libs_dir, bin_dir, compiler, jobs, clean, build_var):
 
     deps_dir = repo_dir / "deps"
     resolver_dir = deps_dir / "RenderStudioKit"
-    openssl_dir = deps_dir / "OpenSSL"
+    openssl_dir = Path(os.environ["ProgramFiles"]) / "OpenSSL-Win64"
     boost_dir = bin_dir / "boost"
     usd_dir = bin_dir / "USD/install"
 
@@ -580,20 +599,13 @@ def resolver(bl_libs_dir, bin_dir, compiler, jobs, clean, build_var):
     cur_dir = os.getcwd()
     ch_dir(resolver_dir)
 
-    try:
-        try:
-            _cmake(resolver_dir, bin_dir / "resolver", compiler, jobs, build_var, clean, args)
-            generate_files()
-        finally:
-            print("Reverting Resolver repo")
-            # check_call('git', 'checkout', '--', '*')
-            # check_call('git', 'clean', '-f')
+    _cmake(resolver_dir, bin_dir / "resolver", compiler, jobs, build_var, clean, args)
+    generate_files()
 
-    finally:
-        os.chdir(cur_dir)
+    os.chdir(cur_dir)
 
 
-def zip_hdrpr_addon(bin_dir):
+def zip_addon(bin_dir):
     print_start("Creating HydraRPR zip Addon")
 
     # region internal functions
@@ -672,7 +684,7 @@ def zip_hdrpr_addon(bin_dir):
     print(f"Addon was compressed to: {zip_addon}")
 
 
-def zip_resolver_addon(bin_dir):
+def zip_rs_addon(bin_dir):
     print_start("Creating RenderStudioResolver zip Addon")
 
     # region internal functions
@@ -763,7 +775,7 @@ def main():
                     help="Build Boost")
     ap.add_argument("-hdrpr", required=False, action="store_true",
                     help="Build HdRPR")
-    ap.add_argument("-resolver", required=False, action="store_true",
+    ap.add_argument("-rs", required=False, action="store_true",
                     help="Build RenderStudioResolver")
     libs_dir_default = {'Windows': r"..\lib\win64_vc15",
                         'Darwin': "../lib/darwin",
@@ -775,6 +787,8 @@ def main():
                     help="Path to binary directory. (default: bin)")
     ap.add_argument("-addon", required=False, action="store_true",
                     help="Create zip addon")
+    ap.add_argument("-rs_addon", required=False, action="store_true",
+                    help="Create RenderStudioResolver zip addon")
     ap.add_argument("-G", required=False, type=str,
                     help="Compiler for HdRPR and MaterialX in cmake. "
                          'For example: -G "Visual Studio 16 2019" or -G "Xcode"',
@@ -815,12 +829,12 @@ def main():
             usd(bl_libs_dir, bin_dir, args.G, args.j, args.clean, args.build_var, not args.no_git_apply)
 
         if args.all or args.boost:
-            boost(bin_dir, args.clean, args.build_var)
+            boost(bin_dir, args.clean)
 
         if args.all or args.hdrpr:
             hdrpr(bl_libs_dir, bin_dir, args.G, args.j, args.clean, args.build_var, not args.no_git_apply)
 
-        if args.all or args.resolver:
+        if args.all or args.rs:
             resolver(bl_libs_dir, bin_dir, args.G, args.j, args.clean, args.build_var)
 
     finally:
@@ -828,15 +842,10 @@ def main():
             uninstall_requirements(py_exe, installed_modules)
 
     if args.all or args.addon:
-        if args.hdrpr:
-            zip_hdrpr_addon(bin_dir)
+        zip_addon(bin_dir)
 
-        elif args.resolver:
-            zip_resolver_addon(bin_dir)
-
-        else:
-            zip_hdrpr_addon(bin_dir)
-            zip_resolver_addon(bin_dir)
+    if args.all or args.rs_addon:
+        zip_rs_addon(bin_dir)
 
     print_start("Finished")
 
