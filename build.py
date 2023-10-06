@@ -355,6 +355,7 @@ def boost(bin_dir, clean):
         check_call(*b2_args)
     finally:
         check_call('git', 'checkout', '--', '*')
+        check_call('git', 'clean', '-f')
         os.chdir(cur_dir)
 
 
