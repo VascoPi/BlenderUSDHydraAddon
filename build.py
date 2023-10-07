@@ -324,16 +324,15 @@ def boost(bin_dir, clean):
     # python-config.jam is required for boost::python
     project_path = 'python-config.jam'
     with open(project_path, 'w') as project_file:
-        lines = [
+        project_file.write("\n".join([
             f'using python : {sysconfig.get_config_var("py_version_short")}',
             f'  : "{Path(sys.executable).as_posix()}"',
             f'  : "{Path(sysconfig.get_path("include")).as_posix()}"',
             f'  : "{(Path(sysconfig.get_config_var("base")) / "libs").as_posix()}"',
             '  ;\n'
-        ]
-        project_file.write("\n".join(lines))
+        ]))
 
-    b2_args = [
+    args = [
         "b2",
         f"--prefix={install_dir}",
         f"--build-dir={build_dir}",
@@ -352,7 +351,7 @@ def boost(bin_dir, clean):
 
     try:
         check_call("bootstrap.bat", f'--prefix="{install_dir}"')
-        check_call(*b2_args)
+        check_call(*args)
     finally:
         check_call('git', 'checkout', '--', '*')
         check_call('git', 'clean', '-f')
@@ -607,7 +606,7 @@ def resolver(bl_libs_dir, bin_dir, compiler, jobs, clean, build_var):
 
 
 def zip_addon(bin_dir):
-    print_start("Creating HydraRPR zip Addon")
+    print_start("Creating zip Addon")
 
     # region internal functions
 
