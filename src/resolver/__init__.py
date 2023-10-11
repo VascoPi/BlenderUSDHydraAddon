@@ -61,14 +61,16 @@ def register():
     operators.register()
     ui.register()
 
-    from .resolver import resolver_client as resolver
-    bpy.app.handlers.depsgraph_update_post.append(resolver.on_depsgraph_update_post)
+    from .resolver import rs_resolver
+    bpy.app.handlers.depsgraph_update_post.append(rs_resolver.on_depsgraph_update_post)
 
 
 def unregister():
-    from .resolver import resolver_client as resolver
-    if resolver.on_depsgraph_update_post in bpy.app.handlers.depsgraph_update_post:
-        bpy.app.handlers.depsgraph_update_post.remove(resolver.on_depsgraph_update_post)
+    from .resolver import rs_resolver
+    rs_resolver.disconnect()
+
+    if rs_resolver.on_depsgraph_update_post in bpy.app.handlers.depsgraph_update_post:
+        bpy.app.handlers.depsgraph_update_post.remove(rs_resolver.on_depsgraph_update_post)
 
     ui.unregister()
     operators.unregister()

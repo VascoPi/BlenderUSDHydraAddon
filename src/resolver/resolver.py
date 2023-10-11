@@ -17,12 +17,12 @@ import bpy
 from . import logging
 
 from pxr import Usd
-from RenderStudioResolver import RenderStudioResolver, LiveModeInfo
+import RenderStudioKit
 
 log = logging.Log("updates")
 
 
-class Resolver:
+class RS_Resolver:
     _is_connected = False
     is_depsgraph_update = True
     usd_path = ''
@@ -30,8 +30,8 @@ class Resolver:
 
     def get_resolver_path(self):
         path = ""
-        if RenderStudioResolver.IsUnresovableToRenderStudioPath(self.usd_path):
-            path = RenderStudioResolver.Unresolve(self.usd_path)
+        if RenderStudioKit.IsUnresovableToRenderStudioPath(self.usd_path):
+            path = RenderStudioKit.UnresolveToRenderStudioPath(self.usd_path)
 
         return path
 
@@ -46,9 +46,9 @@ class Resolver:
 
     def connect_server(self):
         from .import config
-        info = LiveModeInfo(config.server_url, config.storage_url, config.channel_id, config.user_id)
+        info = RenderStudioKit.LiveSessionInfo(config.server_url, config.storage_url, config.channel_id, config.user_id)
         try:
-            RenderStudioResolver.StartLiveMode(info)
+            RenderStudioKit.LiveSessionConnect(info)
             self.is_connected = True
 
             log.debug("Connected: ", config.server_url, config.storage_url, config.channel_id, config.user_id)
@@ -66,7 +66,7 @@ class Resolver:
 
     def disconnect(self):
         if self.is_connected:
-            RenderStudioResolver.StopLiveMode()
+            RenderStudioKit.LiveSessionDisconnect()
             self.is_connected = False
             self.stage = None
             self.usd_path = ''
@@ -97,7 +97,7 @@ class Resolver:
     def sync(self):
         res = False
         if self.is_connected:
-            res = RenderStudioResolver.ProcessLiveUpdates()
+            res = RenderStudioKit.LiveSessionUpdate()
 
         return res
 
@@ -122,4 +122,4 @@ class Resolver:
                             region.tag_redraw()
 
 
-resolver_client = Resolver()
+rs_resolver = RS_Resolver()
