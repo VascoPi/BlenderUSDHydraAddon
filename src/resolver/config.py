@@ -19,6 +19,6 @@ logging_level = 'DEBUG'     # available levels: 'DEBUG', 'INFO', 'WARN', 'ERROR'
 logging_backups = 5
 render_studio_dir = Path.home() / "Documents/AMD RenderStudio Home"
 user_id = f"BlenderUser_{uuid.uuid4()}"
-server_url = ""
+server_url = "wss://localhost:10000"
 storage_url = ""
 channel_id = "Blender"

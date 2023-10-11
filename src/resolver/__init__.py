@@ -53,28 +53,22 @@ def preload_resolver():
         usd_plugin.Load()
 
 
-preload_resolver()
-
-
-from . import resolver, ui, properties, operators
+from . import ui, operators
 
 
 def register():
-    properties.register()
-    bpy.types.Collection.resolver = bpy.props.PointerProperty(type=properties.RESOLVER_collection_properties)
+    preload_resolver()
     operators.register()
     ui.register()
 
+    from .resolver import resolver_client as resolver
     bpy.app.handlers.depsgraph_update_post.append(resolver.on_depsgraph_update_post)
 
 
 def unregister():
+    from .resolver import resolver_client as resolver
     if resolver.on_depsgraph_update_post in bpy.app.handlers.depsgraph_update_post:
         bpy.app.handlers.depsgraph_update_post.remove(resolver.on_depsgraph_update_post)
 
-    if bpy.context.collection.resolver.is_connected:
-        bpy.context.collection.resolver.disconnect()
-
     ui.unregister()
     operators.unregister()
-    properties.unregister()
