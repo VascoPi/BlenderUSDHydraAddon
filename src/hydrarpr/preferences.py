@@ -18,10 +18,14 @@ from pathlib import Path
 import bpy
 
 
+RS_SERVER_URL = ""
+RS_STORAGE_URL = ""
+RS_USER_ID = f"BlenderUser_{uuid.uuid4()}"
+
 try:
     from . import configdev
 except ImportError:
-    configdev = None
+    pass
 
 
 class RPR_HYDRA_ADDON_PT_preferences(bpy.types.AddonPreferences):
@@ -31,29 +35,27 @@ class RPR_HYDRA_ADDON_PT_preferences(bpy.types.AddonPreferences):
         name="Storage Dir",
         description="Set directory which would be synchronized for all connected users",
         subtype='DIR_PATH',
-        default=getattr(
-            configdev, "storage_dir", str(Path.home() / "AppData/Roaming/AMDRenderStudio/Storage/.storage/workspace")
-        ),
+        default=str(Path.home() / "AppData/Roaming/AMDRenderStudio/Storage/.storage/workspace"),
     )
     server_url: bpy.props.StringProperty(
         name="Server Address",
         description="Set address of remote live server",
-        default=getattr(configdev, "server_url", ""),
+        default=RS_SERVER_URL,
     )
     storage_url: bpy.props.StringProperty(
         name="Storage Address",
         description="Set address of remote assets storage",
-        default=getattr(configdev, "storage_url", ""),
+        default=RS_STORAGE_URL,
     )
     user_id: bpy.props.StringProperty(
         name="User ID",
         description="Set unique user identifier",
-        default=getattr(configdev, "user_id", f"BlenderUser_{uuid.uuid4()}"),
+        default=RS_USER_ID,
     )
     channel_id: bpy.props.StringProperty(
         name="Channel ID",
         description="Set channel identifier",
-        default=getattr(configdev, "channel_id", "Blender"),
+        default="Blender",
     )
 
     def draw(self, context):
